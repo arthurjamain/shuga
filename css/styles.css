@@ -1,3 +1,24 @@
+.legend {
+
+}
+
+.legend li {
+  list-style: none;
+}
+
+.legend p {
+  display: inline-block;
+  line-height: 20px;
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.legend .color {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+
 /*!
  * Bootstrap v2.3.2
  *
