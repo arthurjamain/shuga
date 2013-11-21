@@ -20,9 +20,9 @@ var GRAPHS = {
   'geterror': {                 title: 'Errors',                                    type: 'stackedbar'}
 };
 var COLORS = [
+  '#69D2E7',
   '#F38630',
-  '#E0E4CC',
-  '#69D2E7'
+  '#E0E4CC'
 ];
 var MAX_LABELS = 20;
 
@@ -43,7 +43,7 @@ Date.prototype.getPrecision = function (pre) {
 };
 var fromDayOfYear = function (d, y) {
   var date = new Date(y, 0);
-  return new Date(date.setDate(d + 1));
+  return new Date(date.setDate(d));
 };
 function isLeapYear(year) {
   return (year % 4 === 0) && (year % 100 !== 0) || (year % 400 === 0);
@@ -177,7 +177,7 @@ Collection.prototype.getStackedBarData = function (d) {
     }
   }
   var biggest = _.max(biggests, function (e) { return e; });
-  console.log(biggest);
+
   data.scaleStepWidth = (biggest + '').length - 1 || 1;
   data.scaleSteps = biggest / data.scaleStepWidth;
 
@@ -309,12 +309,17 @@ var Picker = function () {
   this.$('.from').datepicker('setValue', now.setDate(now.getDate() - 14));
 };
 Picker.prototype.getForm = function () {
+  var to = new Date(this.$('.to').val());
+  to.setHours(23);
+  to.setMinutes(59);
+  to.setSeconds(59);
+  to.setMilliseconds(0);
   var options = {
     graph: GRAPHS[this.$('.graphname').val()],
     id: this.$('.graphname').val(),
     precision: this.$('.precision').val(),
     from: new Date(this.$('.from').val()),
-    to: new Date(this.$('.to').val())
+    to: to
   };
 
   if (options.from.getTime() && options.to.getTime() && options.from.getTime() < options.to.getTime()) {
