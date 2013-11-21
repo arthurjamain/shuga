@@ -76,7 +76,7 @@ var API = {
   },
   query: function (opt, cb) {
     $.ajax(_.extend(opt || { }, {
-      success   : function (data) { cb(null, window.DATA); },
+      success   : function (data) { cb(null, data/* window.DATA */); },
       error     : function (xhr, status, error) { cb(error, null); },
       dataType  : 'json'
     }));
@@ -177,8 +177,8 @@ Collection.prototype.getStackedBarData = function (d) {
     }
   }
   var biggest = _.max(biggests, function (e) { return e; });
-
-  data.scaleStepWidth = (biggest + '').length - 1;
+  console.log(biggest);
+  data.scaleStepWidth = (biggest + '').length - 1 || 1;
   data.scaleSteps = biggest / data.scaleStepWidth;
 
   return data;
@@ -232,20 +232,28 @@ var Legend = function (params) {
 * Graph Class
 */
 var Graph = function (params) {
-  this.id = params.id;
+
+  var key = params.id + params.collection.from.getTime() + params.collection.to.getTime() + params.collection.precision;
+
+  this.id = key;
+  this.graphId = params.id;
   this.data = params.collection;
   this.type = params.type;
 
-  var existing = document.getElementById(this.id);
+  var existing = document.getElementById(key);
   if (existing) { existing.parentNode.removeChild(existing); }
 
   this.el = document.createElement('div');
-  this.el.id = this.id;
+  this.el.id = key;
+  this.el.className = 'graph';
   this.canvas = document.createElement('canvas');
-  this.canvas.width = 800;
-  this.canvas.height = 600;
+  this.canvas.width = 600;
+  this.canvas.height = 450;
   this.ctx = this.canvas.getContext('2d');
   this.chart = new window.Chart(this.ctx);
+
+  this.setTitle(params.title);
+  this.setCloseButton();
 
   this.el.appendChild(this.canvas);
   var parent = document.getElementById('graphs');
@@ -253,9 +261,28 @@ var Graph = function (params) {
 
   this.drawGraph();
 };
+Graph.prototype.setCloseButton = function () {
+  var closeButton = document.createElement('div');
+  closeButton.className = 'closebutton';
+  closeButton.innerHTML = 'X';
+  this.el.appendChild(closeButton);
+};
+Graph.prototype.setTitle = function (t) {
+  var title = document.createElement('h3');
+  title.className = 'title';
+  title.innerHTML = t;
+  this.el.appendChild(title);
+};
+Graph.prototype.destroy = function () {
+  this.el.parentNode.removeChild(this.el);
+  this.el = null;
+  this.canvas = null;
+  this.ctx = null;
+  this.chart = null;
+};
 Graph.prototype.drawGraph = function () {
 
-  var data = this.data[this.id].call(this.data);
+  var data = this.data[this.graphId].call(this.data);
   var graph = this.type;
   this.chart[graph].call(this.chart, data, {
     scaleOverride : true,
@@ -271,7 +298,7 @@ Graph.prototype.drawGraph = function () {
 * Picker class
 */
 var Picker = function () {
-  this.el = document.getElementById('pickers');
+  this.el = document.getElementById('picker');
   this.$el = $(this.el);
   this.template = $('#tpl-picker').text();
   this.pickers = [];
@@ -283,8 +310,8 @@ var Picker = function () {
 };
 Picker.prototype.getForm = function () {
   var options = {
-    graph: GRAPHS[this.$('.graph').val()],
-    id: this.$('.graph').val(),
+    graph: GRAPHS[this.$('.graphname').val()],
+    id: this.$('.graphname').val(),
     precision: this.$('.precision').val(),
     from: new Date(this.$('.from').val()),
     to: new Date(this.$('.to').val())
@@ -303,14 +330,19 @@ Picker.prototype.getForm = function () {
 */
 var App = function () {
   this.picker = new Picker();
-  this.graphs = [];
+  this.graphs = {};
   this.listen();
 };
 
 App.prototype.listen = function () {
   this.picker.$('.generate').on('click', _.bind(this.createGraph, this));
+  $('#graphs').on('click', '.closebutton', this.removeGraph.bind(this));
 };
-
+App.prototype.removeGraph = function (e) {
+  var id = $(e.target).closest('.graph')[0].id;
+  this.graphs[id].destroy();
+  this.graphs[id] = null;
+};
 App.prototype.createGraph = function () {
   var self = this;
   var options = this.picker.getForm();
@@ -322,7 +354,8 @@ App.prototype.createGraph = function () {
       }, function (err, data) { //
         if (err) { return window.alert(err.toString ? err.toString() : 'Error :('); }
         self.data = new Collection(options, data);
-        self.graphs.push(new Graph(_.extend(options.graph, {id: options.id, collection: self.data})));
+        var graph = new Graph(_.extend(options.graph, {id: options.id, collection: self.data}));
+        self.graphs[graph.id] = graph;
       });
     });
   } else {

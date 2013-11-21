@@ -19,6 +19,57 @@
   display: inline-block;
 }
 
+#picker {
+  width: 400px;
+}
+
+#picker > div {
+  float: left;
+  width: 200px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+#picker > div select,
+#picker > div input {
+  box-sizing: border-box;
+  height: 30px;
+  width: 100%;
+}
+
+#picker .generate {
+  float: right;
+  margin: 0 10px;
+}
+
+#graphs .graph {
+  float: left;
+  position: relative;
+}
+
+.graph h3 {
+  text-align: center;
+}
+
+.graph .closebutton {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  font-size: 20px;
+  cursor: pointer;
+  color: #AB5D5D;
+}
+
+.cf:before,
+.cf:after {
+    content: " "; /* 1 */
+    display: table; /* 2 */
+}
+
+.cf:after {
+    clear: both;
+}
+
 /*!
  * Bootstrap v2.3.2
  *
