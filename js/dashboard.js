@@ -4,7 +4,7 @@
 var GRAPHS = {
   'getcallsclient': {           title: 'Calls (Method of communication)',           type: 'StackedBar'},
   'getcallscharacters': {       title: 'Calls (Characters)',                        type: 'StackedBar'},
-  'getcallsusers': {            title: 'Calls (User Ancienty)',                     type: 'StackedBar'},
+  'getcallsusers': {            title: 'Calls (Registered Users)',                  type: 'StackedBar'},
   'getmsgdmvscmt': {            title: 'Messages (Direct Messages vs. Comments)',   type: 'StackedBar'},
   'getmsgdmpercharacter': {     title: 'Messages (Direct Messages per Character)',  type: 'stackedbar'},
   'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'stackedbar'},
@@ -18,6 +18,12 @@ var GRAPHS = {
   'getactions': {               title: 'Actions per User',                          type: 'stackedbar'},
   'getbanned': {                title: 'Banned Users',                              type: 'stackedbar'},
   'geterror': {                 title: 'Errors',                                    type: 'StackedBar'}
+};
+var LABELS = {
+  'getcallsusers': {
+    '0': 'New User',
+    '1': 'Registered User'
+  }
 };
 var COLORS = [
   '#69D2E7',
@@ -136,7 +142,7 @@ Collection.prototype.getLabels = function (lp, up) {
 Collection.prototype.getStackedBarData = function (d) {
   var data = { labels: [], datasets: [] };
   var self = this;
-
+  console.log(d);
   var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
   var up = this.to.getPrecision(this.precision, this.to.getFullYear());
 
@@ -240,7 +246,7 @@ Collection.prototype.getPonderedStackedBarData = function (d) {
 };
 Collection.prototype.getScaleData = function (b) {
   var data = {};
-  var bl = (b + '').length - 1;
+  var bl = (b + '').split('.')[0].length - 1;
   data.scaleSteps = 10;
   data.scaleStepWidth = Math.pow(10, bl);
 
@@ -286,7 +292,9 @@ Collection.prototype.getcallsusers = function () {
       function (el) {
         return el.events['x-registered'];
       });
-  return this.getStackedBarData(d);
+  var data = this.getStackedBarData(d);
+
+  return data;
 };
 Collection.prototype.geterror = function () {
   var d =
