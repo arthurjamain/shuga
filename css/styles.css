@@ -19,19 +19,43 @@
   display: inline-block;
 }
 
+#graphs {
+  left: 200px;
+  right: 00;
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  overflow: auto;
+}
+
+
 #picker {
-  width: 400px;
+  width: 200px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  overflow: auto;
+}
+
+#picker p {
+  background: #F8F6F4;
+}
+
+#picker label {
+  display: inline-block;
+  margin-bottom: 5px;
+  width: 160px;
 }
 
 #picker > div {
-  float: left;
   width: 200px;
   padding: 10px;
   box-sizing: border-box;
 }
 
 #picker > div select,
-#picker > div input {
+#picker > div input[type=text] {
   box-sizing: border-box;
   height: 30px;
   width: 100%;

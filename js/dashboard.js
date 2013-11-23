@@ -4,8 +4,8 @@
 var GRAPHS = {
   'getcallsclient': {           title: 'Calls (Method of communication)',           type: 'StackedBar'},
   'getcallscharacters': {       title: 'Calls (Characters)',                        type: 'StackedBar'},
-  'getcallsusers': {            title: 'Calls (User Ancienty)',                     type: 'stackedbar'},
-  'getmsgdmvscmt': {            title: 'Messages (Direct Messages vs. Comments)',   type: 'stackedbar'},
+  'getcallsusers': {            title: 'Calls (User Ancienty)',                     type: 'StackedBar'},
+  'getmsgdmvscmt': {            title: 'Messages (Direct Messages vs. Comments)',   type: 'StackedBar'},
   'getmsgdmpercharacter': {     title: 'Messages (Direct Messages per Character)',  type: 'stackedbar'},
   'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'stackedbar'},
   'getcallsstate': {            title: 'Geolocated Calls',                          type: 'stackedbar'},
@@ -72,11 +72,11 @@ var API = {
     options.data = {};
     options.data.username = 'shuga';
     options.data.password = 'shuga';
-    this.query(opt, cb);
+    this.query(options, cb);
   },
   query: function (opt, cb) {
     $.ajax(_.extend(opt || { }, {
-      success   : function (data) { cb(null, data/* window.DATA */); },
+      success   : function (data) { cb(null, window.DATA); },
       error     : function (xhr, status, error) { cb(error, null); },
       dataType  : 'json'
     }));
@@ -176,6 +176,65 @@ Collection.prototype.getStackedBarData = function (d) {
       dsnumber += 1;
     }
   }
+
+  var biggest = _.max(biggests, function (e) { return e; });
+
+  data.scaleStepWidth = (biggest + '').length - 1 || 1;
+  data.scaleSteps = biggest / data.scaleStepWidth;
+
+  return data;
+};
+// can be greatly optimized
+Collection.prototype.getPonderedStackedBarData = function (d) {
+  var data = { labels: [], datasets: [] };
+  var self = this;
+
+  var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
+  var up = this.to.getPrecision(this.precision, this.to.getFullYear());
+
+  var step = this.precision === 'week' ? 7 : 1;
+
+  data.labels = this.getLabels(lp, up);
+
+  _.each(d, function (el, key) {
+    d[key] = _.groupBy(el, function (el2) {
+      var ds = new Date(el2.starttime * 1000);
+      var pre = ds.getPrecision(self.precision, ds.getFullYear());
+      return pre.p + '-' + pre.y;
+    });
+  });
+
+  var dsnumber = 0;
+  var biggests = {};
+  for (var i in d) {
+    if (d.hasOwnProperty(i)) {
+      var ld = new Date(this.from);
+      var dsdata = [];
+      var maxpre = this.to.getPrecision(this.precision).p;
+      while (ld.getPrecision(this.precision).p <= maxpre) {
+        var ldp = ld.getPrecision(this.precision);
+        var key = ldp.p + '-' + ld.getFullYear();
+
+        var val = 0;
+        if (d[i][key]) {
+          for (var k = 0 ; k < d[i][key].length ; k += 1) {
+            val += parseInt(d[i][key][k][i], 10) || 0;
+          }
+        }
+        biggests[key] = biggests[key] ? biggests[key] + val : val;
+        dsdata.push(val);
+        ld.setDate(ld.getDate() + step);
+      }
+      data.datasets.push({
+        fillColor: COLORS[dsnumber],
+        data: dsdata,
+        value: i
+      });
+
+      dsnumber += 1;
+    }
+  }
+
   var biggest = _.max(biggests, function (e) { return e; });
 
   data.scaleStepWidth = (biggest + '').length - 1 || 1;
@@ -209,6 +268,26 @@ Collection.prototype.getcallscharacters = function () {
       });
   return this.getStackedBarData(d);
 };
+Collection.prototype.getcallsusers = function () {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '1';
+        }),
+      function (el) {
+        return el.events['x-registered'];
+      });
+  return this.getStackedBarData(d);
+};
+// can be greatly optimized
+Collection.prototype.getmsgdmvscmt = function () {
+  return this.getPonderedStackedBarData({
+    'x-messages-left': this.entries,
+    'x-comments-left': this.entries
+  });
+};
 Collection.prototype.getPieChartView = function () {
   var gr = _.groupBy(this.entries, function (el) { return el.type; });
   return _.map(gr, function (el, i) {
@@ -233,18 +312,16 @@ var Legend = function (params) {
 */
 var Graph = function (params) {
 
-  var key = params.id + params.collection.from.getTime() + params.collection.to.getTime() + params.collection.precision;
-
-  this.id = key;
+  this.id = params.id;
   this.graphId = params.id;
   this.data = params.collection;
   this.type = params.type;
 
-  var existing = document.getElementById(key);
+  var existing = document.getElementById(params.id);
   if (existing) { existing.parentNode.removeChild(existing); }
 
   this.el = document.createElement('div');
-  this.el.id = key;
+  this.el.id = params.id;
   this.el.className = 'graph';
   this.canvas = document.createElement('canvas');
   this.canvas.width = 600;
@@ -284,6 +361,7 @@ Graph.prototype.drawGraph = function () {
 
   var data = this.data[this.graphId].call(this.data);
   var graph = this.type;
+
   this.chart[graph].call(this.chart, data, {
     scaleOverride : true,
     scaleSteps : data.scaleSteps,
@@ -315,8 +393,6 @@ Picker.prototype.getForm = function () {
   to.setSeconds(59);
   to.setMilliseconds(0);
   var options = {
-    graph: GRAPHS[this.$('.graphname').val()],
-    id: this.$('.graphname').val(),
     precision: this.$('.precision').val(),
     from: new Date(this.$('.from').val()),
     to: to
@@ -340,29 +416,64 @@ var App = function () {
 };
 
 App.prototype.listen = function () {
-  this.picker.$('.generate').on('click', _.bind(this.createGraph, this));
+  this.picker.$('input[type=checkbox]').on('change', this.onGraphChange.bind(this));
+  this.picker.$('.precision').on('change', this.reloadData.bind(this));
+  this.picker.$('.from, .to').datepicker().on('changeDate', this.reloadData.bind(this));
+
   $('#graphs').on('click', '.closebutton', this.removeGraph.bind(this));
 };
+App.prototype.reloadData = function (e) {
+
+  var options = this.picker.getForm();
+  var self = this;
+  if (self.pending) {}
+  API.login({}, function () { // Get session (debug)
+    API.getData({
+      starttime: options.from.getTime() / 1000,
+      endtime: options.to.getTime() / 1000
+    }, function (err, data) { //
+      if (err) { return window.alert(err.toString ? err.toString() : 'Error :('); }
+      self.pending = true;
+      self.data = new Collection(options, data);
+      self.onDataChange();
+    });
+  });
+};
+App.prototype.onDataChange = function () {
+  var self = this;
+  this.picker.$('input[type=checkbox]:checked').each(function () {
+    self.createGraph(this.value);
+  });
+};
 App.prototype.removeGraph = function (e) {
-  var id = $(e.target).closest('.graph')[0].id;
+  var id = $(e.target).closest('.graph').length ? $(e.target).closest('.graph')[0].id : e.target.value;
+
+  if ($('#' + id + '-f').is(':checked')) {
+    $('#' + id + '-f')[0].checked = false;
+  }
+
   this.graphs[id].destroy();
   this.graphs[id] = null;
 };
-App.prototype.createGraph = function () {
+App.prototype.onGraphChange = function (e) {
+  if ($(e.target).is(':checked')) {
+    if (this.data) {
+      this.createGraph(e.target.value);
+    } else {
+      this.reloadData();
+    }
+  } else {
+    this.removeGraph(e);
+  }
+};
+App.prototype.createGraph = function (id) {
   var self = this;
   var options = this.picker.getForm();
-  if (options) {
-    API.login({}, function () { // Get session (debug)
-      API.getData({
-        starttime: options.from.getTime() / 1000,
-        endtime: options.to.getTime() / 1000
-      }, function (err, data) { //
-        if (err) { return window.alert(err.toString ? err.toString() : 'Error :('); }
-        self.data = new Collection(options, data);
-        var graph = new Graph(_.extend(options.graph, {id: options.id, collection: self.data}));
-        self.graphs[graph.id] = graph;
-      });
-    });
+  options.id = id;
+  options.graph = GRAPHS[id];
+  if (options && this.data) {
+    var graph = new Graph(_.extend(options.graph, {id: options.id, collection: self.data}));
+    self.graphs[graph.id] = graph;
   } else {
     window.alert('The form is incomplete or incorrect. Please check !');
   }
