@@ -23,6 +23,15 @@ var LABELS = {
   'getcallsusers': {
     '0': 'New User',
     '1': 'Registered User'
+  },
+  'getexitpoints': {
+    'main-menu': 'Main Menu',
+    'confession': 'Confession',
+    'post-confession-menu': 'Post Cofession Menu',
+    'registration-confirm': 'Registration Confirm',
+    'registration-accept': 'Registration Accept',
+    'message-accept': 'Message Accept',
+    'friends': 'Friends'
   }
 };
 var COLORS = [
@@ -304,7 +313,7 @@ Collection.prototype.geterror = function () {
     errors: d
   });
 };
-Collection.prototype.getexitpoints = function () {
+Collection.prototype.getexitpoints = function getexitpoints() {
   var d =
     _.groupBy(
       _.filter(
@@ -316,11 +325,14 @@ Collection.prototype.getexitpoints = function () {
         return el.events['x-final-state'];
       }
     );
-  return this.getSingleBarData(d);
+  return this.getSimpleBarData(d);
 };
-Collection.prototype.getSingleBarData = function (data) {
+Collection.prototype.getSimpleBarData = function (data) {
   var labels = _.keys(data);
   var values = [];
+  for (var k = 0 ; k < labels.length ; k += 1) {
+    labels[k] = LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][labels[k]] : labels[k];
+  }
   _.each(data, function (el) {
     values.push(el.length);
     return;
