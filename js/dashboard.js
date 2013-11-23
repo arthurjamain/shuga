@@ -14,10 +14,10 @@ var GRAPHS = {
   'getsessionlength': {         title: 'Average Session Length',                    type: 'stackedbar'},
   'gettransfers': {             title: 'Transfers to NACA',                         type: 'stackedbar'},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'stackedbar'},
-  'getexitpoints': {            title: 'Exit Points',                               type: 'stackedbar'},
+  'getexitpoints': {            title: 'Exit Points',                               type: 'Bar'},
   'getactions': {               title: 'Actions per User',                          type: 'stackedbar'},
   'getbanned': {                title: 'Banned Users',                              type: 'stackedbar'},
-  'geterror': {                 title: 'Errors',                                    type: 'stackedbar'}
+  'geterror': {                 title: 'Errors',                                    type: 'StackedBar'}
 };
 var COLORS = [
   '#69D2E7',
@@ -76,7 +76,7 @@ var API = {
   },
   query: function (opt, cb) {
     $.ajax(_.extend(opt || { }, {
-      success   : function (data) { cb(null, window.DATA); },
+      success   : function (data) { cb(null, data); },
       error     : function (xhr, status, error) { cb(error, null); },
       dataType  : 'json'
     }));
@@ -280,6 +280,57 @@ Collection.prototype.getcallsusers = function () {
         return el.events['x-registered'];
       });
   return this.getStackedBarData(d);
+};
+Collection.prototype.geterror = function () {
+  console.log(this.entries);
+  var d =
+    _.filter(
+      this.entries,
+      function (el) {
+        return el.events['x-error'] && el.events['x-error'].length;
+      });
+    console.log(d);
+  return this.getStackedBarData({
+    errors: d
+  });
+};
+Collection.prototype.getexitpoints = function () {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '1';
+        }),
+      function (el) {
+        return el.events['x-final-state'];
+      }
+    );
+  return this.getSingleBarData(d);
+};
+Collection.prototype.getSingleBarData = function (data) {
+  var labels = _.keys(data);
+  var values = [];
+  _.each(data, function (el) {
+    values.push(el.length);
+    return;
+  });
+  var barData = {
+    labels: labels,
+    datasets: [{
+      fillColor: COLORS[0],
+      data: values,
+      value: 'Exit Point'
+    }]
+  };
+
+
+  var biggest = _.max(values);
+
+  barData.scaleStepWidth = (biggest + '').length - 1 || 1;
+  barData.scaleSteps = biggest / barData.scaleStepWidth;
+
+  return barData;
 };
 // can be greatly optimized
 Collection.prototype.getmsgdmvscmt = function () {
