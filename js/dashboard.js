@@ -396,7 +396,7 @@ Graph.prototype.setCloseButton = function () {
   var closeButton = document.createElement('div');
   closeButton.className = 'closebutton';
   closeButton.innerHTML = 'X';
-  this.el.appendChild(closeButton);
+  //this.el.appendChild(closeButton);
 };
 Graph.prototype.setTitle = function (t) {
   var title = document.createElement('h3');
