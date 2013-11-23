@@ -19,19 +19,21 @@
 
     <script type="text/template" id="tpl-picker">
       <div class="params">
-        <label for="precision">Precision</label>
+        <label for="precision">Precision :</label>
         <select name="precision" class="precision">
           <option value="day">Day</option>
           <option value="week">Week</option>
         </select>
-        <label>From</label>
+        <label>From :</label>
         <input type="text" class="from" />
-        <label>To</label>
+        <label>To :</label>
         <input type="text" class="to" />
       </div>
       <div class="graphselection">
         <% for (var i in graphs) { %><p>
+          <b>
           <label for="<%= i %>-f"><%= graphs[i].title %></label><input type="checkbox" id="<%= i %>-f" value="<%= i %>" />
+          </b>
           </p><% } %>
       </div>
       <!-- <input type="button" class="generate" value="Generate" /> -->

@@ -5,8 +5,8 @@ var GRAPHS = {
   'getcallsclient': {           title: 'Calls (Method of communication)',           type: 'StackedBar'},
   'getcallscharacters': {       title: 'Calls (Characters)',                        type: 'StackedBar'},
   'getcallsusers': {            title: 'Calls (Registered Users)',                  type: 'StackedBar'},
-  'getmsgdmvscmt': {            title: 'Messages (Direct Messages vs. Comments)',   type: 'StackedBar'},
-  'getmsgdmpercharacter': {     title: 'Messages (Direct Messages per Character)',  type: 'StackedBar'},
+  'getmsgdmvscmt': {            title: 'Messages (Direct Message vs Comment)',   type: 'StackedBar'},
+  'getmsgdmpercharacter': {     title: 'Messages (Direct Message / Character)',  type: 'StackedBar'},
   'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar'},
   'getcallsstate': {            title: 'Geolocated Calls',                          type: 'StackedBar'},
   'getgender': {                title: 'Genders',                                   type: 'Doughnut'},
@@ -651,6 +651,7 @@ App.prototype.removeGraph = function (e) {
 };
 App.prototype.onGraphChange = function (e) {
   if ($(e.target).is(':checked')) {
+    $(e.target).addClass('checked');
     if (this.data) {
       this.createGraph(e.target.value);
     } else {
