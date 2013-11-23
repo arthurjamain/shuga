@@ -178,9 +178,7 @@ Collection.prototype.getStackedBarData = function (d) {
   }
 
   var biggest = _.max(biggests, function (e) { return e; });
-
-  data.scaleStepWidth = (biggest + '').length - 1 || 1;
-  data.scaleSteps = biggest / data.scaleStepWidth;
+  _.extend(data, this.getScaleData(biggest));
 
   return data;
 };
@@ -236,9 +234,18 @@ Collection.prototype.getPonderedStackedBarData = function (d) {
   }
 
   var biggest = _.max(biggests, function (e) { return e; });
+  _.extend(data, this.getScaleData(biggest));
 
-  data.scaleStepWidth = (biggest + '').length - 1 || 1;
-  data.scaleSteps = biggest / data.scaleStepWidth;
+  return data;
+};
+Collection.prototype.getScaleData = function (b) {
+  var data = {};
+  var bl = (b + '').length - 1;
+  data.scaleSteps = 10;
+  data.scaleStepWidth = Math.pow(10, bl);
+
+  if (data.scaleStepWidth / 4 * data.scaleSteps >= b) { data.scaleStepWidth /= 4; }
+  else if (data.scaleStepWidth / 2 * data.scaleSteps >= b) { data.scaleStepWidth /= 2; }
 
   return data;
 };
@@ -282,14 +289,12 @@ Collection.prototype.getcallsusers = function () {
   return this.getStackedBarData(d);
 };
 Collection.prototype.geterror = function () {
-  console.log(this.entries);
   var d =
     _.filter(
       this.entries,
       function (el) {
         return el.events['x-error'] && el.events['x-error'].length;
       });
-    console.log(d);
   return this.getStackedBarData({
     errors: d
   });
@@ -326,9 +331,7 @@ Collection.prototype.getSingleBarData = function (data) {
 
 
   var biggest = _.max(values);
-
-  barData.scaleStepWidth = (biggest + '').length - 1 || 1;
-  barData.scaleSteps = biggest / barData.scaleStepWidth;
+  _.extend(barData, this.getScaleData(biggest));
 
   return barData;
 };
