@@ -18,7 +18,7 @@
     </div>
 
     <script type="text/template" id="tpl-picker">
-      <div>
+      <div class="params">
         <label for="precision">Precision</label>
         <select name="precision" class="precision">
           <option value="day">Day</option>
@@ -29,13 +29,10 @@
         <label>To</label>
         <input type="text" class="to" />
       </div>
-      <div>
-        <label for="graphname">Graph Types</label>
-        <% for (var i in graphs) { %>
-          <p>
+      <div class="graphselection">
+        <% for (var i in graphs) { %><p>
           <label for="<%= i %>-f"><%= graphs[i].title %></label><input type="checkbox" id="<%= i %>-f" value="<%= i %>" />
-          </p>
-        <% } %>
+          </p><% } %>
       </div>
       <!-- <input type="button" class="generate" value="Generate" /> -->
     </script>

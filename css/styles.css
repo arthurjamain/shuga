@@ -20,9 +20,9 @@
 }
 
 #graphs {
-  left: 200px;
-  right: 00;
-  top: 0;
+  left: 0;
+  right: 0;
+  top: 200px;
   bottom: 0;
   position: absolute;
   overflow: auto;
@@ -30,35 +30,66 @@
 
 
 #picker {
-  width: 200px;
   position: absolute;
   top: 0;
   left: 0;
-  bottom: 0;
   overflow: auto;
+  right: 0;
+  height: 200px;
 }
 
 #picker p {
-  background: #F8F6F4;
-}
-
-#picker label {
+  background: #FFF;
   display: inline-block;
-  margin-bottom: 5px;
+  height: 44px;
+  margin: 2px;
+  padding: 10px;
+  box-sizing: border-box;
   width: 160px;
+  position: relative;
+  overflow: hidden;
 }
 
-#picker > div {
+#picker .graphselection input {
+  position: absolute;
+  top: 12px;
+  right: 2px;
+}
+
+#picker .params label {
+  font-size: 10px;
+}
+#picker .graphselection label {
+  display: inline-block;
+  width: 90%;
+  font-size: 10px;
+  height: 40px;
+  line-height: 14px;
+}
+
+#picker .params {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 200px;
   padding: 10px;
   box-sizing: border-box;
 }
 
+#picker .graphselection {
+  position: absolute;
+  left: 200px;
+  right: 0;
+  top: 0;
+  line-height: 0;
+}
+
 #picker > div select,
 #picker > div input[type=text] {
   box-sizing: border-box;
-  height: 30px;
+  height: 20px;
   width: 100%;
+  font-size: 10px;
 }
 
 #picker .generate {
