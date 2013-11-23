@@ -142,7 +142,6 @@ Collection.prototype.getLabels = function (lp, up) {
 Collection.prototype.getStackedBarData = function (d) {
   var data = { labels: [], datasets: [] };
   var self = this;
-  console.log(d);
   var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
   var up = this.to.getPrecision(this.precision, this.to.getFullYear());
 
@@ -176,9 +175,8 @@ Collection.prototype.getStackedBarData = function (d) {
       data.datasets.push({
         fillColor: COLORS[dsnumber],
         data: dsdata,
-        value: i
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
       });
-
       dsnumber += 1;
     }
   }
@@ -232,7 +230,7 @@ Collection.prototype.getPonderedStackedBarData = function (d) {
       data.datasets.push({
         fillColor: COLORS[dsnumber],
         data: dsdata,
-        value: i
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
       });
 
       dsnumber += 1;
@@ -281,7 +279,7 @@ Collection.prototype.getcallscharacters = function () {
       });
   return this.getStackedBarData(d);
 };
-Collection.prototype.getcallsusers = function () {
+Collection.prototype.getcallsusers = function getcallsusers() {
   var d =
     _.groupBy(
       _.filter(
@@ -293,7 +291,6 @@ Collection.prototype.getcallsusers = function () {
         return el.events['x-registered'];
       });
   var data = this.getStackedBarData(d);
-
   return data;
 };
 Collection.prototype.geterror = function () {
