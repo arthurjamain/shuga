@@ -7,11 +7,11 @@ var GRAPHS = {
   'getcallsusers': {            title: 'Calls (Registered Users)',                  type: 'StackedBar'},
   'getmsgdmvscmt': {            title: 'Messages (Direct Message vs Comment)',      type: 'StackedBar'},
   'getmsgdmpercharacter': {     title: 'Messages (Direct Message per Character)',   type: 'StackedBar'},
-  'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar', deactivated: true},
+  'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar'},
   'getcallsstate': {            title: 'Geolocated Calls',                          type: 'StackedBar'},
   'getgender': {                title: 'Gender',                                    type: 'Doughnut'},
   'getage': {                   title: 'Age',                                       type: 'Doughnut'},
-  'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar', deactivated: true},
+  'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar'},
   'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar', deactivated: true},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'StackedBar'},
   'getexitpoints': {            title: 'Exit Points',                               type: 'Bar', legend: false},
@@ -47,11 +47,12 @@ var LABELS = {
   }
 };
 var COLORS = [
+  '#FFB553',
+  '#3EBFBE',
   '#4A505C',
   '#F38630',
   '#69D2E7',
   '#E0E4CC',
-  '#FFB553',
   '#F04448',
   '#7D8796'
 ];
@@ -117,7 +118,7 @@ var API = {
     options.url = 'http://demo.sbc4d.com/public/shugaivr/web/en/login.php';
     options.method = 'POST';
     options.data = {};
-    options.data.username = 'shuga';
+    options.data.login = 'shuga';
     options.data.password = 'shuga';
     this.query(options, cb);
   },
@@ -179,6 +180,67 @@ Collection.prototype.getLabels = function (lp, up) {
 
   return labels;
 
+};
+
+Collection.prototype.getAvgSessionStackedBarData = function (d) {
+
+  var data = { labels: [], datasets: [] };
+  var self = this;
+  var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
+  var up = this.to.getPrecision(this.precision, this.to.getFullYear());
+
+  var step = this.precision === 'week' ? 7 : 1;
+
+  data.labels = this.getLabels(lp, up);
+
+  _.each(d, function (el, key) {
+    d[key] = _.groupBy(el, function (el2) {
+      var ds = new Date(el2.starttime * 1000);
+      var pre = ds.getPrecision(self.precision, ds.getFullYear());
+      return pre.p + '-' + pre.y;
+    });
+  });
+
+  var dsnumber = 0;
+  var biggests = {};
+
+  for (var i in d) {
+    if (d.hasOwnProperty(i)) {
+      var ld = new Date(this.from);
+      var dsdata = [];
+      var maxpre = this.to.getPrecision(this.precision).p;
+      while (ld.getPrecision(this.precision).p <= maxpre) {
+        var ldp = ld.getPrecision(this.precision);
+        var key = ldp.p + '-' + ld.getFullYear();
+        var val = 0;
+
+        if (d[i][key] && d[i][key].length) {
+          var significantData = d[i][key].length;
+          for (var k = 0 ; k < d[i][key].length ; k += 1) {
+
+            if (typeof d[i][key][k].endtime === 'undefined') { significantData -= 1; continue; }
+
+            val += d[i][key][k].endtime - d[i][key][k].starttime;
+          }
+          val /= significantData ? significantData : 1;
+          console.log(val);
+        }
+        biggests[key] = biggests[key] ? biggests[key] + val : val;
+        dsdata.push(val);
+        ld.setDate(ld.getDate() + step);
+      }
+      data.datasets.push({
+        fillColor: COLORS[dsnumber],
+        data: dsdata,
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
+      });
+      dsnumber += 1;
+    }
+  }
+  var biggest = _.max(biggests, function (e) { return e; });
+  _.extend(data, this.getScaleData(biggest));
+
+  return data;
 };
 Collection.prototype.getActionsStackedBarData = function (d) {
 
@@ -558,8 +620,26 @@ Collection.prototype.getcallsstate = function getcallsstate() {
 
   return this.getStackedBarData(data);
 };
+Collection.prototype.getsessionlength = function getsessionlength() {
+  return this.getAvgSessionStackedBarData({'Average Session Length (seconds)': _.filter(this.entries, function (el) { return el.type === '1'; })});
+};
 Collection.prototype.getactions = function getactions() {
   return this.getActionsStackedBarData({'Average Actions per User': this.entries});
+};
+Collection.prototype.getmsgcmtperconf = function getmsgcmtperconf() {
+
+  var confessions = {};
+  _.each(this.entries, function (el) {
+    if (el.events['x-history']) {
+      var c = getConfessions(el.events['x-history']);
+      for (var k = 0 ; k < c.length ; k += 1) {
+        if (typeof confessions[c[k]] === 'undefined') { confessions[c[k]] = []; }
+        confessions[c[k]].push(el);
+      }
+    }
+  });
+  return this.getStackedBarData(confessions);
+
 };
 Collection.prototype.getmsgdmpercharacter = function () {
   var data =
@@ -745,7 +825,7 @@ App.prototype.reloadData = function () {
   var options = this.picker.getForm();
   var self = this;
   if (self.pending) {}
-  API.login({}, function () { // Get session (debug)
+  API.login({}, function () {
     API.getData({
       starttime: options.from.getTime() / 1000,
       endtime: options.to.getTime() / 1000
@@ -774,6 +854,7 @@ App.prototype.removeGraph = function (e) {
   this.graphs[id] = null;
 };
 App.prototype.onGraphChange = function (e) {
+  $(e.target).closest('p').toggleClass('active');
   if ($(e.target).is(':checked')) {
     $(e.target).addClass('checked');
     if (this.data) {
