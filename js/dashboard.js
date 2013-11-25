@@ -5,24 +5,24 @@ var GRAPHS = {
   'getcallsclient': {           title: 'Calls (Method of communication)',           type: 'StackedBar'},
   'getcallscharacters': {       title: 'Calls (Characters)',                        type: 'StackedBar'},
   'getcallsusers': {            title: 'Calls (Registered Users)',                  type: 'StackedBar'},
-  'getmsgdmvscmt': {            title: 'Messages (Direct Message vs Comment)',   type: 'StackedBar'},
-  'getmsgdmpercharacter': {     title: 'Messages (Direct Message / Character)',  type: 'StackedBar'},
-  'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar'},
+  'getmsgdmvscmt': {            title: 'Messages (Direct Message vs Comment)',      type: 'StackedBar'},
+  'getmsgdmpercharacter': {     title: 'Messages (Direct Message per Character)',   type: 'StackedBar'},
+  'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar', deactivated: true},
   'getcallsstate': {            title: 'Geolocated Calls',                          type: 'StackedBar'},
-  'getgender': {                title: 'Genders',                                   type: 'Doughnut'},
+  'getgender': {                title: 'Gender',                                    type: 'Doughnut'},
   'getage': {                   title: 'Age',                                       type: 'Doughnut'},
-  'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar'},
-  'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar'},
+  'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar', deactivated: true},
+  'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar', deactivated: true},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'StackedBar'},
-  'getexitpoints': {            title: 'Exit Points',                               type: 'Bar'},
+  'getexitpoints': {            title: 'Exit Points',                               type: 'Bar', legend: false},
   'getactions': {               title: 'Actions per User',                          type: 'StackedBar'},
   'getbanned': {                title: 'Banned Users',                              type: 'StackedBar'},
   'geterror': {                 title: 'Errors',                                    type: 'StackedBar'}
 };
 var LABELS = {
   'getcallsusers': {
-    '0': 'New User',
-    '1': 'Registered User'
+    '1': 'New User',
+    '0': 'Registered User'
   },
   'getgender': {
     '0': 'Unknown',
@@ -47,10 +47,27 @@ var LABELS = {
   }
 };
 var COLORS = [
-  '#69D2E7',
+  '#4A505C',
   '#F38630',
+  '#69D2E7',
   '#E0E4CC',
-  '#F04448'
+  '#FFB553',
+  '#F04448',
+  '#7D8796'
+];
+var SESSION_ACTIONS = [
+  'A',
+  'E',
+  'X',
+  'Y',
+  'D',
+  'V'
+];
+var AGE_RANGES = [
+  { label: '0 &mdash; 16',  range: [0, 16]    },
+  { label: '16 &mdash; 24', range: [16, 24]   },
+  { label: '24 &mdash; 45', range: [24, 45]   },
+  { label: 'Older than 45', range: [45, 120]  }
 ];
 var MAX_LABELS = 20;
 
@@ -81,7 +98,9 @@ function getWeeksOfYear(year) {
   var days = firstDayOfYear.getDay() + (isLeapYear(year) ? 366 : 365);
   return Math.ceil(days / 7);
 }
-
+var getConfessions = function getConfessions(d) {
+  return _.map(d.match(/Y\d+/g), function (e) { return e.split('Y').pop(); });
+};
 /*
 * API (singleton)
 */
@@ -161,6 +180,66 @@ Collection.prototype.getLabels = function (lp, up) {
   return labels;
 
 };
+Collection.prototype.getActionsStackedBarData = function (d) {
+
+  var data = { labels: [], datasets: [] };
+  var self = this;
+  var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
+  var up = this.to.getPrecision(this.precision, this.to.getFullYear());
+
+  var step = this.precision === 'week' ? 7 : 1;
+
+  data.labels = this.getLabels(lp, up);
+
+  _.each(d, function (el, key) {
+    d[key] = _.groupBy(el, function (el2) {
+      var ds = new Date(el2.starttime * 1000);
+      var pre = ds.getPrecision(self.precision, ds.getFullYear());
+      return pre.p + '-' + pre.y;
+    });
+  });
+
+  var dsnumber = 0;
+  var biggests = {};
+
+  for (var i in d) {
+    if (d.hasOwnProperty(i)) {
+      var ld = new Date(this.from);
+      var dsdata = [];
+      var maxpre = this.to.getPrecision(this.precision).p;
+      while (ld.getPrecision(this.precision).p <= maxpre) {
+        var ldp = ld.getPrecision(this.precision);
+        var key = ldp.p + '-' + ld.getFullYear();
+        var val = 0;
+
+        if (d[i][key] && d[i][key].length) {
+          var significantData = d[i][key].length;
+          for (var k = 0 ; k < d[i][key].length ; k += 1) {
+            var hist = d[i][key][k].events['x-history'];
+            if (typeof hist === 'undefined') { significantData -= 1; continue; }
+            for (var l = 0 ; l < SESSION_ACTIONS.length ; l += 1) {
+              val += hist.split(SESSION_ACTIONS[l]).length - 1;
+            }
+          }
+          val /= significantData ? significantData : 1;
+        }
+        biggests[key] = biggests[key] ? biggests[key] + val : val;
+        dsdata.push(val);
+        ld.setDate(ld.getDate() + step);
+      }
+      data.datasets.push({
+        fillColor: COLORS[dsnumber],
+        data: dsdata,
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
+      });
+      dsnumber += 1;
+    }
+  }
+  var biggest = _.max(biggests, function (e) { return e; });
+  _.extend(data, this.getScaleData(biggest));
+
+  return data;
+};
 Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
   var data = { labels: [], datasets: [] };
   var self = this;
@@ -219,7 +298,6 @@ Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
     }
   }
   var biggest = _.max(biggests, function (e) { return e; });
-  console.log(biggest);
   _.extend(data, this.getScaleData(biggest));
 
   return data;
@@ -290,8 +368,8 @@ Collection.prototype.getScaleData = function (b) {
   data.scaleSteps = 10;
   data.scaleStepWidth = Math.pow(10, bl);
 
-  if (data.scaleStepWidth / 4 * data.scaleSteps >= b) { data.scaleStepWidth /= 4; }
-  else if (data.scaleStepWidth / 2 * data.scaleSteps >= b) { data.scaleStepWidth /= 2; }
+  if ((data.scaleStepWidth / 4) % 1 === 0 && data.scaleStepWidth / 4 * data.scaleSteps >= b) { data.scaleStepWidth /= 4; }
+  else if ((data.scaleStepWidth / 2) % 1 === 0 && data.scaleStepWidth / 2 * data.scaleSteps >= b) { data.scaleStepWidth /= 2; }
 
   return data;
 };
@@ -371,10 +449,26 @@ Collection.prototype.getgender = function getgender() {
 Collection.prototype.getage = function getage() {
   var d =
     _.groupBy(this.entries, function (el) {
-      return !!el.events['x-user-age'] ? el.events['x-user-age'] : 0;
+      if (el.events['x-user-age']) {
+        var age = parseInt(el.events['x-user-age'], 10);
+        for (var k = 0; k < AGE_RANGES.length ; k += 1) {
+          if (age > AGE_RANGES[k].range[0] && age < AGE_RANGES[k].range[1]) {
+            return k;
+          }
+        }
+      }
+
+      return 0;
     });
 
-  return this.getDoughnutData(d);
+  var data = this.getDoughnutData(d);
+  console.log(data);
+  for (var i = 0; i < data.length; i += 1) {
+    if (data[i].label !== 'Unknown') {
+      data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label;
+    }
+  }
+  return data;
 };
 Collection.prototype.getbanned = function getbanned() {
   var d =
@@ -449,6 +543,24 @@ Collection.prototype.getconfovertime = function getconfovertime() {
 
   return this.getStackedBarData(data, 'x-confessions-played');
 };
+Collection.prototype.getcallsstate = function getcallsstate() {
+  var data =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '1';
+        }),
+      function (el) {
+        return el.events['x-user-state'];
+      }
+    );
+
+  return this.getStackedBarData(data);
+};
+Collection.prototype.getactions = function getactions() {
+  return this.getActionsStackedBarData({'Average Actions per User': this.entries});
+};
 Collection.prototype.getmsgdmpercharacter = function () {
   var data =
     _.groupBy(
@@ -461,8 +573,6 @@ Collection.prototype.getmsgdmpercharacter = function () {
         return el.events['x-character-name'];
       }
     );
-
-    console.log(data);
 
   return this.getStackedBarData(data, 'x-messages-left');
 };
@@ -562,8 +672,11 @@ Graph.prototype.drawGraph = function () {
   }
 
   this.chart[graph].call(this.chart, data, options);
-  this.legend = new Legend(data);
-  this.el.appendChild(this.legend.el);
+  if ((typeof GRAPHS[this.id].legend !== 'undefined' && GRAPHS[this.id].legend) ||
+      typeof GRAPHS[this.id].legend === 'undefined') {
+    this.legend = new Legend(data);
+    this.el.appendChild(this.legend.el);
+  }
 };
 
 /*
@@ -613,10 +726,21 @@ App.prototype.listen = function () {
   this.picker.$('input[type=checkbox]').on('change', this.onGraphChange.bind(this));
   this.picker.$('.precision').on('change', this.reloadData.bind(this));
   this.picker.$('.from, .to').datepicker().on('changeDate', this.reloadData.bind(this));
-
+  this.picker.$('.find').on('click', this.find.bind(this));
   $('#graphs').on('click', '.closebutton', this.removeGraph.bind(this));
 };
-App.prototype.reloadData = function (e) {
+
+App.prototype.find = function (e) {
+  var $el = $(e.target);
+  var id = $el.data('id');
+  var posY = $('#graphs').scrollTop() + $('#' + id).position().top;
+
+  $('#graphs').animate({
+    scrollTop: posY
+  }, 400);
+};
+
+App.prototype.reloadData = function () {
 
   var options = this.picker.getForm();
   var self = this;
@@ -666,11 +790,12 @@ App.prototype.createGraph = function (id) {
   var options = this.picker.getForm();
   options.id = id;
   options.graph = GRAPHS[id];
-  if (options && this.data) {
+  if (this.data) {
+
+    if (options.graph.deactivated) { return false; }
+
     var graph = new Graph(_.extend(options.graph, {id: options.id, collection: self.data}));
     self.graphs[graph.id] = graph;
-  } else {
-    window.alert('The form is incomplete or incorrect. Please check !');
   }
 };
 

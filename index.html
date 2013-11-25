@@ -32,7 +32,7 @@
       <div class="graphselection">
         <% for (var i in graphs) { %><p>
           <b>
-          <label for="<%= i %>-f"><%= graphs[i].title %></label><input type="checkbox" id="<%= i %>-f" value="<%= i %>" />
+          <label for="<%= i %>-f"><%= graphs[i].title %></label><input type="checkbox" id="<%= i %>-f" value="<%= i %>" /><a href="#" class="find" data-id="<%=i%>"></a>
           </b>
           </p><% } %>
       </div>
@@ -42,7 +42,6 @@
     <script type="text/javascript" src="js/underscore.js"></script>
     <script type="text/javascript" src="js/datepicker.js"></script>
     <script type="text/javascript" src="js/chart.js"></script>
-    <script type="text/javascript" src="js/data.js"></script>
     <script type="text/javascript" src="js/dashboard.js"></script>
   </body>
 </html>
