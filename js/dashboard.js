@@ -756,6 +756,8 @@ Graph.prototype.drawGraph = function () {
       typeof GRAPHS[this.id].legend === 'undefined') {
     this.legend = new Legend(data);
     this.el.appendChild(this.legend.el);
+  } else {
+    $(this.el).addClass('no-legend');
   }
 };
 

@@ -20,23 +20,26 @@ body {
   -webkit-column-count: 4;
   -moz-column-count: 4;
   column-count: 4;
+  height: 80px;
 }
 
 .legend li {
   list-style: none;
+  height: 40px;
 }
 
 .legend p {
   display: inline-block;
   line-height: 20px;
   vertical-align: middle;
-  margin-left: 10px;
+  margin: 0 0 0 10px;
   overflow: hidden;
   width: 100px;
   text-overflow: ellipsis;
   box-sizing: border-box;
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
+  height: 100%;
 }
 
 .legend .color {
@@ -194,6 +197,10 @@ body {
 #graphs .graph {
   float: left;
   position: relative;
+}
+
+.graph.no-legend {
+  padding-bottom: 90px;
 }
 
 .graph h3 {
