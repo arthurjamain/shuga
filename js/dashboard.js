@@ -770,8 +770,8 @@ var Picker = function () {
   this.el.innerHTML = _.template(this.template, { graphs: GRAPHS });
   this.$ = function (sel) { return $(sel, this.el); };
   var now = new Date();
-  this.$('.to').datepicker('setValue', now);
-  this.$('.from').datepicker('setValue', now.setDate(now.getDate() - 14));
+  this.toDatePicker = this.$('.to').datepicker('setValue', now);
+  this.fromDatePicker = this.$('.from').datepicker('setValue', now.setDate(now.getDate() - 14));
 };
 Picker.prototype.getForm = function () {
   var to = new Date(this.$('.to').val());
@@ -824,6 +824,9 @@ App.prototype.reloadData = function () {
 
   var options = this.picker.getForm();
   var self = this;
+
+  this.picker.$('.from, .to').datepicker('hide');
+
   if (self.pending) {}
   API.login({}, function () {
     API.getData({
