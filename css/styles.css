@@ -240,13 +240,15 @@ body {
     font-size: 9px;
     border: 1px solid rgba(255,255,255,0.6);
     height: 17px;
+    padding-right: 2px;
 }
 #getcallsstate .state-label .users {
+    padding-left: 12px!important;
 
 }
 #getcallsstate .state-label .users:after {
   background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADOklEQVR4Xu2agXHTQBBFowqACnAqAFeAqYCkAkwFQAXYFQAVYCogrgCnAtwBooKECsz/mlUmFijju9t/kpB2RqMZj7W3+7S7d7e64mzkUozc/7MJwBQBIycwpcDIA6CbIng4HF4Y+Od23/NeFMV17heSLQXg9AzOvcW1xPW4xdFb/L7B9RkwyhwwsgCA83T64wOON30liPeAQBhSkQOA8+/M+RhHCOFTzIOnPiMFAOcXMOT7qca0/G8OCFWNUIgawE8YPUs0fA8A80QdrY/LADi9/drwl4CwU0BQAmABe+1k9FcAWDrpOlKjBPADI9XzfKrtsjRQAjiken3/eUSAxFaJUuQ/3zwjwFOegAHXB66iArCAlanTX9NRSSGcALjGkylDCnCtf+OsezgpQMcBYbxF0ACwYD1yioLfKIBtO8ikISQ1wADscK/3/UlG4uFrAGBhdRclgBWs/eBk8RoAqM9dlACWsPaLk8WXAHDlpOtIjRLADCNxN+gh56oOkQyA1YES96eJBH7BecKUiBoAuznsA6YI+4PsKklEDcAjDWThT6JSAJYGG9xj+wKyPkAdTjkApESBZPl7P5fkACwKOIW9CkziLXL/IvCZ4L/nArCEZaFrgjf/xXcBi4AF7qH9Acn+vxkiWSLAIATtDlUtsAlAg0DOCODXnWcnVinZ7q+TCIjsEMmnwFwLITYyWABDvxEwYlgI3TvB2dYB1h7n9BfqfG0jIXArXJ6YOsF/k9QAOwzBZgjnfw/ZQAmbIu4g3ABYnnO1R6c57ytkB6WEwVWiS2okAbCzPlyu0uHYMI8FxfTgEnsHGNFni4IAmMN0tr5ijVc8x+iorhAgDwKwXGZY02H5xsSZCqODF9cUZZvufwKA43UuD83pNj8JYgMQ2+YfjgDYqQ5OWzPnt9EXdYwE7jKZKpXcAYDznLZWfbFUbMcKENZ3AOwcX+h+XWyjXH3Vb6giAAA8TnPJLXYeoASA80J0msPZVpm6OQGw0n+TDdFvxZcEwMLn9RGz3+7+bd2aAGI6tkNztM3eLQF4nucbGph9nQJDM9zN3qDNkNuoPVI0AejRy+jElCkCOsHeo0GnCOjRy+jElD/4dwI9YP5yBQAAAABJRU5ErkJggg==) no-repeat 0 0;
-  top: 10px;
+  top: 3px;
   left: 1px;
 }
 #getcallsstate .state-label .calls {
@@ -255,18 +257,30 @@ body {
 #getcallsstate .state-label .calls:after {
   /*background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACdklEQVR4Xu1bi00CQRD1OtAKxArUCsQKpISjArUCsQK1AikBKvA6ECqQDrQDfM8syWVdZI+ZOy7xXUIwsjM783Z23uzniqMOnvV6/YRuSny+8HksimLaQbdZXRRZrQyN4Dwdf41UnAGElUGtm2gXAMxg7U1k8T0AeHbzwqCoCwAq2HcV2chpMDHY7SYqANyg3KIIOUARoCnwH3MAQp+Z/yLw/yCaIaTAHBrctFsgac7bmK7uSRCOj2AoC5/Yaav9BIP0SVp1e1wBgPMseEo369KKpgBh7NWHGwBwnoXNrZdhO/S8AIQ7j75cAIDzQxjz5mFQAx3XAKFq0D7Z1AuAVLlrtW2X/BwAMN+YHjMAGP1jWPBZs2KJv0feix30M4BeAn1e6+sE/XCFuffjAUAc/q3V+QBhAk8fat6ap4EA2Dt2gmAiASoC2lrqagooBygJigVEg6oDVAipEux7KeyySktVqIkd5l6uBbh/d2ktsbcA8I7/c59x8/QSABrnfvYXlsMfETC9BWABQ122rGoOc8utPvr8qbcAtDEDUjoFgHVfsI0Nka5GX1NAOUBJUCwgFhALGI/HRINW0j7QwWjvF0NWXHPllQSVBJUEbZckxAK52WZbO7HAYe4HiQYDAqJB0aBoUDRYWZhMdYAFPcqqDlAd8HOFNT6zswZWrrz5DNKcA8I0WOH7NNdqp3ZL1ADxWWFj1V4AlOg5fju0sTENBcYAYNpQ5ldzFwBCFPBEuH6T22rbX/Iuo88OPAHgtXlyctsg8Dr+0HpNfoOuGwAhCggCwzJ+V9grGvjmWOnlvGsE1D0MtQHzApOUNSI44oysmXXhkxqFb36NnVCwXOEMAAAAAElFTkSuQmCC) no-repeat 0 0;*/
   background: transparent url(../img/phone_w.png) no-repeat 0 0;
-  top: 10px;
-  left: 41px;
+  top: 5px;
+  left: 3px;
+  background-size: 100% 90%!important;
 }
 #getcallsstate .state-label .sms {
+    padding-left: 21px!important;
 }
 #getcallsstate .state-label .sms:after {
   /*background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAECElEQVR4Xu2ajXHTQBCF4wogFeBUQFIBTgVABZgKCBXgVEBSAaYCkgqwKyCpAKcCQgXmfZkVo2h0P9LJsmRpZ27sgLR37+3u7d6eJ0cDl8nA8R+NBIweMHAGxhAYuAOMm2ArIbDdbk/laS80XmrwPZM7fXnUeJhMJpt9eONOCBDgtwIzs5EHHMK40gOQciNC1qGHm/j/xggwK3/Sot6ZpVPXh2csNa536R3JBAg4lv5i1k4F7XofIi53QURtAgSceP5mFt8V8KLeKyMC72hEahEg8Lg54CGhbdlowvfyBvaKZKlMgMDj7ovkmdMVfBQJhEaSVCJA4LH6PGnGZl++EAnXKSqjCegg+Ax3kidEESDwWB3rd1XYE27qLC5IgOX3X3WUt/gOWeGsTpqMIQDwVaq5FnE/m2olAs6rTu4loAeuX8R7LhJWVUgIEfBbyqZVFO752cpe4CSgh9bPuGcviC6SfAQspfHDni1aZ3oOTxexL/oI+CMl+yh1Y9fuem4jAk5ilZQS0JPU58QoAoLZLXvZRcBcD3S58AkZODobuAhYaAYOPX2VwRMQfT4YPaDMx63N9bOv/q91J4fATEr6TMAJByPadvr0ts9cIUD+pw7opWRpUARchYoiXyG0Evo3PWTgVqDpWR6JgK0+Putvmqml4iOAcvJrDwl4ygDWuP2h9XsrQx8B9AC63ggp2uev/mFK3IuApb5nZxlnWgwdh9lAuNPri3B5srA7i/we9j8sikBCBPRpH8hbfyGg+Ur2UcQcl1kxREBRUZc9IYt9MhiNnGcnWdcB6VAIyO/8dIe5nS5KaaMkRADphJ20y3Kvxc1s4/Ot97isKAoRMJPyLleED1rfqYEna7HW0iZO3RCYS2FX+wJ5ywMa8K72/YMImB7SJngrMHOzfAg8uJ19wlAIUELyq4+uCKlukZW21rrDQ0MXN87TYYiALt0KfTfwG6xR5TcKvh6hrxSOPRFeaj0rXFJjF230InDWRZET2/q+FwFOD0k5DD1bmFmFxUEE6SjlJLnW++TzZT512WUNB7Qq7fq1dMxcMewjoOxajBhcanDOfnJFl1g9DvNMPrXB43li2Mk5b6CLsdK4K+ZrA47V0VNVqhOgCfNHYRbJwvjtHp+tiLXlCCm8qYrFi+urRQCTcoBoBbDAYtlXGjONzGtSQOdJwKPOXFaLvkFp2uzm1qTZNo7bpWUwmPZGAJOb5Rf6mpI92Jc2Gq89RqrXEGna6i59tmHOLd5jsgegCU8yBXsTHSDeh0xCqSjOtthePcBDCPsAe8Cs8Mwd1hZgPkvFCiT2MEY+vJ66RcWXOklAU55npTJkTtE5OAJiiDxoDxgJiGBg9IAIkg76kdEDDtq8EeAG7wH/AMKsh1CJDKRgAAAAAElFTkSuQmCC) no-repeat 0 0;*/
   content: 'SMS'!important;
-  top: 7px;
-  left: 79px;
+  top: 0px;
+  left: 4px;
   font-size: 7px;
 }
+
+#getcallsstate .state-label .users,
+#getcallsstate .state-label .calls,
+#getcallsstate .state-label .sms {
+    display: block;
+    float: left;
+    padding-left: 14px;
+    position: relative;
+}
+
 #getcallsstate .state-label .users:after,
 #getcallsstate .state-label .calls:after,
 #getcallsstate .state-label .sms:after {
@@ -276,14 +290,6 @@ body {
   height: 12px;
   background-size: 100% 100%;
   position: absolute;
-}
-#getcallsstate .state-label .users,
-#getcallsstate .state-label .calls,
-#getcallsstate .state-label .sms {
-    display: block;
-    width: 30px;
-    float: left;
-    padding-left: 12px;
 }
 
 #getcallsstate .state-label .state {
