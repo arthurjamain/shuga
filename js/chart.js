@@ -1050,6 +1050,11 @@ window.Chart = function(context){
 
   var StackedBar = function(data,config,ctx){
     var maxSize, scaleHop, calculatedScale, labelHeight, scaleHeight, valueBounds, labelTemplateString, valueHop,widestXLabel, xAxisLength,yAxisPosX,xAxisPosY,barWidth, rotateLabels = 0;
+    var forceOblique = false;
+
+    if (config && config.forceOblique) {
+      forceOblique = config.forceOblique;
+    }
 
     calculateDrawingSizes();
 
@@ -1094,8 +1099,8 @@ window.Chart = function(context){
       ctx.lineWidth = config.barStrokeWidth;
       var yStart = new Array(data.datasets.length);
       for (var i=0; i<data.datasets.length; i++){
-          ctx.fillStyle = data.datasets[i].fillColor;
-          ctx.strokeStyle = data.datasets[i].strokeColor;
+        ctx.fillStyle = data.datasets[i].fillColor;
+        ctx.strokeStyle = data.datasets[i].strokeColor;
         if (i == 0) { //on the first pass, act as normal
           for (var j=0; j<data.datasets[i].data.length; j++){
             var barOffset = yAxisPosX + config.barValueSpacing + valueHop*j + barWidth*i + config.barDatasetSpacing*i + config.barStrokeWidth*i;
@@ -1114,17 +1119,19 @@ window.Chart = function(context){
         } else { //on all other passes, just build on top of the last set of data
           for (var j=0; j<data.datasets[i].data.length; j++){
             var barOffset = yAxisPosX + config.barValueSpacing + valueHop*j;
-            ctx.beginPath();
-            ctx.moveTo(barOffset, xAxisPosY - yStart[j] + 1);
-            ctx.lineTo(barOffset, xAxisPosY - animPc*calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop)+(config.barStrokeWidth/2) - yStart[j]);
-            ctx.lineTo(barOffset + barWidth, xAxisPosY - animPc*calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop)+(config.barStrokeWidth/2) - yStart[j]);
-            ctx.lineTo(barOffset + barWidth, xAxisPosY - yStart[j] + 1);
-            yStart[j] = calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop)+(config.barStrokeWidth/2)+yStart[j];
-            if(config.barShowStroke){
-              ctx.stroke();
+            if (data.datasets[i].data[j]) {
+              ctx.beginPath();
+              ctx.moveTo(barOffset, xAxisPosY - yStart[j] + 1);
+              ctx.lineTo(barOffset, xAxisPosY - animPc*calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop)+(config.barStrokeWidth/2) - yStart[j]);
+              ctx.lineTo(barOffset + barWidth, xAxisPosY - animPc*calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop)+(config.barStrokeWidth/2) - yStart[j]);
+              ctx.lineTo(barOffset + barWidth, xAxisPosY - yStart[j] + 1);
+              yStart[j] = calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop)+(config.barStrokeWidth/2)+yStart[j];
+              if(config.barShowStroke){
+                ctx.stroke();
+              }
+              ctx.closePath();
+              ctx.fill();
             }
-            ctx.closePath();
-            ctx.fill();
           }
         }
       }
@@ -1234,7 +1241,7 @@ window.Chart = function(context){
       }
       if (width/data.labels.length < widestXLabel){
         rotateLabels = 45;
-        if (width/data.labels.length < Math.cos(rotateLabels) * widestXLabel){
+        if (!forceOblique && width/data.labels.length < Math.cos(rotateLabels) * widestXLabel){
           rotateLabels = 90;
           maxSize -= widestXLabel;
         }

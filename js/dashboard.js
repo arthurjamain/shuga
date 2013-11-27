@@ -94,10 +94,11 @@ var COLORS = [
   '#3EBFBE',
   '#4A505C',
   '#F38630',
-  '#69D2E7',
+  '#58E14D',
   '#E0E4CC',
   '#F04448',
-  '#7D8796'
+  '#7D8796',
+  '#9A61FF'
 ];
 var SESSION_ACTIONS = [
   'A',
@@ -158,14 +159,14 @@ var getCommentOnConfession = function getCommentOnConfession(d) {
 var API = {
   getData: function (opt, cb) {
     var options = {};
-    options.url = 'http://demo.sbc4d.com/public/shugaivr/web/en/generate_log_json.php';
+    options.url = 'https://shuga.sbc4d.com/en/generate_log_json.php';
     options.data = opt;
 
     this.query(options, cb);
   },
   login: function (opt, cb) {
     var options = {};
-    options.url = 'http://demo.sbc4d.com/public/shugaivr/web/en/login.php';
+    options.url = 'http://shuga.sbc4d.com/en/login.php';
     options.method = 'POST';
     options.data = {};
     options.data.login = 'shuga';
@@ -218,7 +219,7 @@ Collection.prototype.getLabels = function (lp, up) {
         var date = llp.getDate();
         var month = llp.getMonth() + 1;
         var year = llp.getFullYear();
-        labels.push(month + '/' + date + '/' + year);
+        labels.push(date + '/' + month + '/' + year);
       } else {
         labels.push(' ');
       }
@@ -439,18 +440,15 @@ Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
         var key = ldp.p + '-' + ld.getFullYear();
         var val = d[i][key] ? d[i][key].length : 0;
         if (ponderatingProp && d[i][key]) {
+          val = 0;
           if (typeof d[i][key][0][ponderatingProp] !== 'undefined') {
-            val = 0;
             for (var h = 0 ; h < d[i][key].length ; h += 1) {
               val += parseInt(d[i][key][h].events[ponderatingProp], 10);
             }
           } else if (typeof d[i][key][0].events[ponderatingProp] !== 'undefined') {
-            val = 0;
             for (var g = 0 ; g < d[i][key].length ; g += 1) {
               val += parseInt(d[i][key][g].events[ponderatingProp], 10);
             }
-          } else {
-            console.log(':(');
           }
         }
         biggests[key] = biggests[key] ? biggests[key] + val : val;
@@ -763,7 +761,8 @@ Collection.prototype.getmsgcmtperconf = function getmsgcmtperconf() {
         return el.events['x-character-name'];
       }
     );
-  return this.getStackedBarDataCpc(data);
+  return this.getStackedBarData(data, 'x-comments-left');
+  //return this.getStackedBarDataCpc(data);
 
 };
 Collection.prototype.getmsgdmpercharacter = function () {
@@ -881,6 +880,7 @@ Graph.prototype.drawGraph = function () {
 
   } else {
     _.extend(options, {
+      barStrokeWidth: 0,
       scaleOverride : true,
       scaleSteps : data.scaleSteps,
       scaleStepWidth : data.scaleStepWidth,
@@ -999,7 +999,7 @@ App.prototype.reloadData = function () {
   this.picker.$('.from, .to').datepicker('hide');
 
   if (self.pending) {}
-  API.login({}, function () {
+  //API.login({}, function () {
     API.getData({
       starttime: options.from.getTime() / 1000,
       endtime: options.to.getTime() / 1000
@@ -1009,7 +1009,7 @@ App.prototype.reloadData = function () {
       self.data = new Collection(options, data);
       self.onDataChange();
     });
-  });
+  //});
 };
 App.prototype.onDataChange = function () {
   var self = this;
