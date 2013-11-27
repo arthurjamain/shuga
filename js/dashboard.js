@@ -12,7 +12,7 @@ var GRAPHS = {
   'getgender': {                title: 'Gender',                                    type: 'Doughnut'},
   'getage': {                   title: 'Age',                                       type: 'Doughnut'},
   'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar'},
-  'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar', deactivated: true},
+  'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar'},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'StackedBar'},
   'getexitpoints': {            title: 'Exit Points',                               type: 'Bar', legend: false},
   'getactions': {               title: 'Actions per User',                          type: 'StackedBar'},
@@ -20,6 +20,10 @@ var GRAPHS = {
   'geterror': {                 title: 'Errors',                                    type: 'StackedBar'}
 };
 var LABELS = {
+  'gettransfers': {
+    '1': 'Transferred to NACA',
+    '0': 'Not Transferred to NACA'
+  },
   'getcallsusers': {
     '1': 'New User',
     '0': 'Registered User'
@@ -46,6 +50,45 @@ var LABELS = {
     'friends': 'Friends'
   }
 };
+var NIEGRIA_STATES = [
+  'Abuja',
+  'Anambra',
+  'Enugu',
+  'Akwa Ibom',
+  'Adamawa',
+  'Abia',
+  'Bauchi',
+  'Bayelsa',
+  'Benue',
+  'Borno',
+  'Cross River',
+  'Delta',
+  'Ebonyi',
+  'Edo',
+  'Ekiti',
+  'Gombe',
+  'Imo',
+  'Jigawa',
+  'Kaduna',
+  'Kano',
+  'Katsina',
+  'Kebbi',
+  'Kogi',
+  'Kwara',
+  'Lagos',
+  'Nasarawa',
+  'Niger',
+  'Ogun',
+  'Ondo',
+  'Osun',
+  'Oyo',
+  'Plateau',
+  'Rivers',
+  'Sokoto',
+  'Taraba',
+  'Yobe',
+  'Zamfara'
+];
 var COLORS = [
   '#FFB553',
   '#3EBFBE',
@@ -71,6 +114,7 @@ var AGE_RANGES = [
   { label: 'Older than 45', range: [45, 120]  }
 ];
 var MAX_LABELS = 20;
+var NIGERIA_MAP = 'img/nigeria.png';
 
 Date.prototype.getWeekOfYear = function () {
   var onejan = new Date(this.getFullYear(), 0, 1);
@@ -101,6 +145,12 @@ function getWeeksOfYear(year) {
 }
 var getConfessions = function getConfessions(d) {
   return _.map(d.match(/Y\d+/g), function (e) { return e.split('Y').pop(); });
+};
+var getNACA = function getConfessions(d) {
+  return d.split('L').length - 1;
+};
+var getCommentOnConfession = function getCommentOnConfession(d) {
+  return d.split('G').length - 1;
 };
 /*
 * API (singleton)
@@ -284,6 +334,62 @@ Collection.prototype.getActionsStackedBarData = function (d) {
             }
           }
           val /= significantData ? significantData : 1;
+        }
+        biggests[key] = biggests[key] ? biggests[key] + val : val;
+        dsdata.push(val);
+        ld.setDate(ld.getDate() + step);
+      }
+      data.datasets.push({
+        fillColor: COLORS[dsnumber],
+        data: dsdata,
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
+      });
+      dsnumber += 1;
+    }
+  }
+  var biggest = _.max(biggests, function (e) { return e; });
+  _.extend(data, this.getScaleData(biggest));
+
+  return data;
+};
+Collection.prototype.getStackedBarDataCpc = function (d) {
+
+  var data = { labels: [], datasets: [] };
+  var self = this;
+  var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
+  var up = this.to.getPrecision(this.precision, this.to.getFullYear());
+
+  var step = this.precision === 'week' ? 7 : 1;
+
+  data.labels = this.getLabels(lp, up);
+
+  _.each(d, function (el, key) {
+    d[key] = _.groupBy(el, function (el2) {
+      var ds = new Date(el2.starttime * 1000);
+      var pre = ds.getPrecision(self.precision, ds.getFullYear());
+      return pre.p + '-' + pre.y;
+    });
+  });
+
+  var dsnumber = 0;
+  var biggests = {};
+
+  for (var i in d) {
+    if (d.hasOwnProperty(i)) {
+      var ld = new Date(this.from);
+      var dsdata = [];
+      var maxpre = this.to.getPrecision(this.precision).p;
+      while (ld.getPrecision(this.precision).p <= maxpre) {
+        var ldp = ld.getPrecision(this.precision);
+        var key = ldp.p + '-' + ld.getFullYear();
+        var val = 0;
+
+        if (d[i][key] && d[i][key].length) {
+          for (var k = 0 ; k < d[i][key].length ; k += 1) {
+            var hist = d[i][key][k].events['x-history'];
+            if (typeof hist === 'undefined') { continue; }
+            val += getCommentOnConfession(hist);
+          }
         }
         biggests[key] = biggests[key] ? biggests[key] + val : val;
         dsdata.push(val);
@@ -590,6 +696,20 @@ Collection.prototype.getmsgdmvscmt = function getmsgdmvscmt() {
     'x-comments-left': this.entries
   });
 };
+Collection.prototype.gettransfers = function gettransfers() {
+  var data =
+  _.groupBy(
+    _.filter(
+      this.entries,
+      function (el) {
+        return el.type === '1';
+      }),
+    function (el) {
+      return getNACA(el.events['x-history']);
+    }
+  );
+  return this.getStackedBarData(data);
+};
 Collection.prototype.getconfovertime = function getconfovertime() {
   var data =
     _.groupBy(
@@ -607,38 +727,43 @@ Collection.prototype.getconfovertime = function getconfovertime() {
 };
 Collection.prototype.getcallsstate = function getcallsstate() {
   var data =
-    _.groupBy(
-      _.filter(
-        this.entries,
-        function (el) {
-          return el.type === '1';
-        }),
+    _.groupBy(this.entries,
       function (el) {
         return el.events['x-user-state'];
       }
     );
 
-  return this.getStackedBarData(data);
+  var d = {};
+
+  _.each(NIEGRIA_STATES, function (el, i) {
+    d[el] = {};
+    d[el].users = data[el] ? data[el].length : 0;
+    d[el].sms = _.filter(data[el], function (inEl) { return inEl.type === '3'; });
+    d[el].calls = _.filter(data[el], function (inEl) { return inEl.type === '1'; });
+  });
+
+  return d;
 };
 Collection.prototype.getsessionlength = function getsessionlength() {
-  return this.getAvgSessionStackedBarData({'Average Session Length (seconds)': _.filter(this.entries, function (el) { return el.type === '1'; })});
+  return this.getAvgSessionStackedBarData({'Avg Session Length (sec)': _.filter(this.entries, function (el) { return el.type === '1'; })});
 };
 Collection.prototype.getactions = function getactions() {
   return this.getActionsStackedBarData({'Average Actions per User': this.entries});
 };
 Collection.prototype.getmsgcmtperconf = function getmsgcmtperconf() {
 
-  var confessions = {};
-  _.each(this.entries, function (el) {
-    if (el.events['x-history']) {
-      var c = getConfessions(el.events['x-history']);
-      for (var k = 0 ; k < c.length ; k += 1) {
-        if (typeof confessions[c[k]] === 'undefined') { confessions[c[k]] = []; }
-        confessions[c[k]].push(el);
+  var data =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return !!el.events['x-character-name'];
+        }),
+      function (el) {
+        return el.events['x-character-name'];
       }
-    }
-  });
-  return this.getStackedBarData(confessions);
+    );
+  return this.getStackedBarDataCpc(data);
 
 };
 Collection.prototype.getmsgdmpercharacter = function () {
@@ -647,7 +772,7 @@ Collection.prototype.getmsgdmpercharacter = function () {
       _.filter(
         this.entries,
         function (el) {
-          return el.type === '1';
+          return !!el.events['x-character-name'];
         }),
       function (el) {
         return el.events['x-character-name'];
@@ -694,26 +819,12 @@ var Graph = function (params) {
   this.graphId = params.id;
   this.data = params.collection;
   this.type = params.type;
+  this.title = params.title;
 
   var existing = document.getElementById(params.id);
   if (existing) { existing.parentNode.removeChild(existing); }
 
-  this.el = document.createElement('div');
-  this.el.id = params.id;
-  this.el.className = 'graph';
-  this.canvas = document.createElement('canvas');
-  this.canvas.width = 600;
-  this.canvas.height = 450;
-  this.ctx = this.canvas.getContext('2d');
-  this.chart = new window.Chart(this.ctx);
-
-  this.setTitle(params.title);
-  this.setCloseButton();
-
-  this.el.appendChild(this.canvas);
-  var parent = document.getElementById('graphs');
-  parent.appendChild(this.el);
-
+  this.render();
   this.drawGraph();
 };
 Graph.prototype.setCloseButton = function () {
@@ -735,6 +846,32 @@ Graph.prototype.destroy = function () {
   this.ctx = null;
   this.chart = null;
 };
+Graph.prototype.render = function () {
+
+  this.el = document.createElement('div');
+  this.el.id = this.id;
+  this.el.className = 'graph';
+  this.setTitle(this.title);
+
+  if (this.id !== 'getcallsstate') {
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = 600;
+    this.canvas.height = 450;
+    this.ctx = this.canvas.getContext('2d');
+    this.chart = new window.Chart(this.ctx);
+    this.el.appendChild(this.canvas);
+  } else {
+    this.map = document.createElement('img');
+    this.map.src = NIGERIA_MAP;
+    this.map.width = 650;
+    this.map.height = 450;
+    this.el.appendChild(this.map);
+  }
+
+  var parent = document.getElementById('graphs');
+  parent.appendChild(this.el);
+
+};
 Graph.prototype.drawGraph = function () {
 
   var data = this.data[this.graphId].call(this.data);
@@ -751,13 +888,45 @@ Graph.prototype.drawGraph = function () {
     });
   }
 
-  this.chart[graph].call(this.chart, data, options);
-  if ((typeof GRAPHS[this.id].legend !== 'undefined' && GRAPHS[this.id].legend) ||
-      typeof GRAPHS[this.id].legend === 'undefined') {
-    this.legend = new Legend(data);
-    this.el.appendChild(this.legend.el);
+  if (this.id !== 'getcallsstate') {
+    this.chart[graph].call(this.chart, data, options);
+    if ((typeof GRAPHS[this.id].legend !== 'undefined' && GRAPHS[this.id].legend) ||
+        typeof GRAPHS[this.id].legend === 'undefined') {
+      this.legend = new Legend(data);
+      this.el.appendChild(this.legend.el);
+    } else {
+      $(this.el).addClass('no-legend');
+    }
   } else {
-    $(this.el).addClass('no-legend');
+    for (var k in data) {
+      if (data.hasOwnProperty(k)) {
+        var el = document.createElement('div');
+        el.className = 'state-label ' + k.toLowerCase().replace(' ', '_');
+
+        var smsLabel = document.createElement('span');
+        smsLabel.className = 'sms';
+        smsLabel.appendChild(document.createTextNode(data[k].sms.length));
+
+        var callsLabel = document.createElement('span');
+        callsLabel.className = 'calls';
+        callsLabel.appendChild(document.createTextNode(data[k].calls.length));
+
+        var usersLabel = document.createElement('span');
+        usersLabel.className = 'users';
+        usersLabel.appendChild(document.createTextNode(data[k].users));
+
+        var stateLabel = document.createElement('span');
+        stateLabel.className = 'state';
+        stateLabel.appendChild(document.createTextNode(k));
+
+        el.appendChild(usersLabel);
+        el.appendChild(callsLabel);
+        el.appendChild(smsLabel);
+        el.appendChild(stateLabel);
+
+        this.el.appendChild(el);
+      }
+    }
   }
 };
 
