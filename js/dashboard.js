@@ -17,7 +17,13 @@ var GRAPHS = {
   'getexitpoints': {            title: 'Exit Points',                               type: 'Bar', legend: false},
   'getactions': {               title: 'Actions per User',                          type: 'StackedBar'},
   'getbanned': {                title: 'Banned Users',                              type: 'StackedBar'},
-  'geterror': {                 title: 'Errors',                                    type: 'StackedBar'}
+  'geterror': {                 title: 'Errors',                                    type: 'StackedBar'},
+  'getsmsovertimeusage': {      title: 'SMS (Usage)',                               type: 'StackedBar'},
+  'getsmsovertimenetwork': {    title: 'SMS (Network)',                             type: 'StackedBar'},
+  'getsmssubpernetwork': {      title: 'SMS Subscriptions per Network',             type: 'StackedBar'},
+  'getsmsoptoutpernetwork': {   title: 'SMS Opt Outs per Network',                  type: 'StackedBar'},
+  'getsmsgender': {             title: 'SMS Gender',                                type: 'Doughnut'},
+  'getsmsage': {                title: 'SMS Age',                                   type: 'Doughnut'}
 };
 var LABELS = {
   'gettransfers': {
@@ -35,6 +41,11 @@ var LABELS = {
   },
   'getage': {
     '0': 'Unknown'
+  },
+  'getsmsovertimeusage': {
+    'x-sms-comment': 'Comments',
+    'x-sms-subscribe': 'Subscription',
+    'x-sms-register': 'Registration'
   },
   'getmsgdmvscmt': {
     'x-messages-left': 'Messages',
@@ -636,6 +647,45 @@ Collection.prototype.getage = function getage() {
   }
   return data;
 };
+Collection.prototype.getsmsgender = function getgender() {
+  var d =
+    _.groupBy(
+      _.filter(this.entries, function (e) {
+        return e.type === '3';
+      }),
+    function (el) {
+      return !!el.events['x-user-gender'] ? el.events['x-user-gender'] : 0;
+    });
+
+  return this.getDoughnutData(d);
+};
+Collection.prototype.getsmsage = function getage() {
+  var d =
+    _.groupBy(
+      _.filter(this.entries, function (e) {
+        return e.type === '3';
+      }),
+    function (el) {
+      if (el.events['x-user-age']) {
+        var age = parseInt(el.events['x-user-age'], 10);
+        for (var k = 0; k < AGE_RANGES.length ; k += 1) {
+          if (age > AGE_RANGES[k].range[0] && age < AGE_RANGES[k].range[1]) {
+            return k;
+          }
+        }
+      }
+      return 0;
+    });
+
+  var data = this.getDoughnutData(d);
+  console.log(data);
+  for (var i = 0; i < data.length; i += 1) {
+    if (data[i].label !== 'Unknown') {
+      data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label;
+    }
+  }
+  return data;
+};
 Collection.prototype.getbanned = function getbanned() {
   var d =
     _.filter(
@@ -693,6 +743,55 @@ Collection.prototype.getmsgdmvscmt = function getmsgdmvscmt() {
     'x-messages-left': this.entries,
     'x-comments-left': this.entries
   });
+};
+Collection.prototype.getsmsovertimeusage = function getsmsovertimeusage() {
+  return this.getPonderedStackedBarData({
+    'x-sms-comment': this.entries,
+    'x-sms-subscribe': this.entries,
+    'x-sms-register': this.entries
+  });
+};
+Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '3';
+        }),
+      function (el) {
+        return typeof el.events['x-network'] === 'object' ? el.events['x-network'][0] : el.events['x-network'];
+      }
+    );
+  return this.getStackedBarData(d);
+};
+Collection.prototype.getsmssubpernetwork = function getsmssubpernetwork() {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '3' && parseInt(el.events['x-sms-subscribe'], 10);
+        }),
+      function (el) {
+        return typeof el.events['x-network'] === 'object' ? el.events['x-network'][0] : el.events['x-network'];
+      }
+    );
+  return this.getStackedBarData(d);
+};
+Collection.prototype.getsmsoptoutpernetwork = function getsmsoptoutpernetwork() {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '3' && parseInt(el.events['x-sms-optout'], 10);
+        }),
+      function (el) {
+        return typeof el.events['x-network'] === 'object' ? el.events['x-network'][0] : el.events['x-network'];
+      }
+    );
+  return this.getStackedBarData(d);
 };
 Collection.prototype.gettransfers = function gettransfers() {
   var data =
