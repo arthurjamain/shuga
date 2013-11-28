@@ -10,7 +10,7 @@ var GRAPHS = {
   'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar'},
   'getcallsstate': {            title: 'Geolocated Calls',                          type: 'StackedBar'},
   'getgender': {                title: 'Gender',                                    type: 'Doughnut'},
-  'getage': {                   title: 'Age',                                       type: 'Doughnut'},
+  'getage': {                   title: 'Age Distribution',                          type: 'Doughnut'},
   'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar'},
   'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar'},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'StackedBar'},
@@ -22,6 +22,9 @@ var GRAPHS = {
   'getsmsovertimenetwork': {    title: 'SMS (Network)',                             type: 'StackedBar'},
   'getsmssubpernetwork': {      title: 'SMS Subscriptions per Network',             type: 'StackedBar'},
   'getsmsoptoutpernetwork': {   title: 'SMS Opt Outs per Network',                  type: 'StackedBar'},
+  'getsmscomments': {           title: 'SMS Comments left per Character',           type: 'StackedBar'},
+  'getallcomments': {           title: 'All Comments left per Character',           type: 'StackedBar'},
+  'getsmscommentsnetwork': {    title: 'SMS Comments left per Network',             type: 'StackedBar'},
   'getsmsgender': {             title: 'SMS Gender',                                type: 'Doughnut'},
   'getsmsage': {                title: 'SMS Age',                                   type: 'Doughnut'}
 };
@@ -98,7 +101,8 @@ var NIEGRIA_STATES = [
   'Sokoto',
   'Taraba',
   'Yobe',
-  'Zamfara'
+  'Zamfara',
+  'Unknown'
 ];
 var COLORS = [
   '#FFB553',
@@ -180,8 +184,6 @@ var API = {
     options.url = 'http://shuga.sbc4d.com/en/login.php';
     options.method = 'POST';
     options.data = {};
-    options.data.login = 'shuga';
-    options.data.password = 'shuga';
     this.query(options, cb);
   },
   query: function (opt, cb) {
@@ -364,6 +366,61 @@ Collection.prototype.getActionsStackedBarData = function (d) {
 
   return data;
 };
+Collection.prototype.getStackedBarDataAllComments = function (d) {
+
+  var data = { labels: [], datasets: [] };
+  var self = this;
+  var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
+  var up = this.to.getPrecision(this.precision, this.to.getFullYear());
+
+  var step = this.precision === 'week' ? 7 : 1;
+
+  data.labels = this.getLabels(lp, up);
+
+  _.each(d, function (el, key) {
+    d[key] = _.groupBy(el, function (el2) {
+      var ds = new Date(el2.starttime * 1000);
+      var pre = ds.getPrecision(self.precision, ds.getFullYear());
+      return pre.p + '-' + pre.y;
+    });
+  });
+
+  var dsnumber = 0;
+  var biggests = {};
+
+  for (var i in d) {
+    if (d.hasOwnProperty(i)) {
+      var ld = new Date(this.from);
+      var dsdata = [];
+      var maxpre = this.to.getPrecision(this.precision).p;
+      while (ld.getPrecision(this.precision).p <= maxpre) {
+        var ldp = ld.getPrecision(this.precision);
+        var key = ldp.p + '-' + ld.getFullYear();
+        var val = 0;
+
+        if (d[i][key] && d[i][key].length) {
+          for (var k = 0 ; k < d[i][key].length ; k += 1) {
+            val += parseInt(d[i][key][k].events['x-comments-left'], 10) || 0;
+            val += parseInt(d[i][key][k].events['x-sms-comment'], 10) || 0;
+          }
+        }
+        biggests[key] = biggests[key] ? biggests[key] + val : val;
+        dsdata.push(val);
+        ld.setDate(ld.getDate() + step);
+      }
+      data.datasets.push({
+        fillColor: COLORS[dsnumber],
+        data: dsdata,
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
+      });
+      dsnumber += 1;
+    }
+  }
+  var biggest = _.max(biggests, function (e) { return e; });
+  _.extend(data, this.getScaleData(biggest));
+
+  return data;
+};
 Collection.prototype.getStackedBarDataCpc = function (d) {
 
   var data = { labels: [], datasets: [] };
@@ -454,11 +511,11 @@ Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
           val = 0;
           if (typeof d[i][key][0][ponderatingProp] !== 'undefined') {
             for (var h = 0 ; h < d[i][key].length ; h += 1) {
-              val += parseInt(d[i][key][h].events[ponderatingProp], 10);
+              val += parseInt(d[i][key][h].events[ponderatingProp], 10) || 0;
             }
           } else if (typeof d[i][key][0].events[ponderatingProp] !== 'undefined') {
             for (var g = 0 ; g < d[i][key].length ; g += 1) {
-              val += parseInt(d[i][key][g].events[ponderatingProp], 10);
+              val += parseInt(d[i][key][g].events[ponderatingProp], 10) || 0;
             }
           }
         }
@@ -639,7 +696,7 @@ Collection.prototype.getage = function getage() {
     });
 
   var data = this.getDoughnutData(d);
-  console.log(data);
+
   for (var i = 0; i < data.length; i += 1) {
     if (data[i].label !== 'Unknown') {
       data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label;
@@ -793,6 +850,59 @@ Collection.prototype.getsmsoptoutpernetwork = function getsmsoptoutpernetwork() 
     );
   return this.getStackedBarData(d);
 };
+Collection.prototype.getsmscomments = function getsmscomments() {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '3';
+        }),
+      function (el) {
+        return el.events['x-character-name'];
+      }
+    );
+
+  d.Unknown = d.Unknown || [];
+  d.Unknown = d.Unknown.concat(d.undefined);
+  delete d.undefined;
+
+  return this.getStackedBarData(d, 'x-sms-comment');
+};
+Collection.prototype.getallcomments = function getallcomments() {
+  var d =
+    _.groupBy(
+      this.entries,
+      function (el) {
+        return el.events['x-character-name'];
+      }
+    );
+
+  d.Unknown = d.Unknown || [];
+  d.Unknown = d.Unknown.concat(d.undefined);
+  delete d.undefined;
+
+  return this.getStackedBarDataAllComments(d);
+};
+Collection.prototype.getsmscommentsnetwork = function getsmscommentsnetwork() {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '3';
+        }),
+      function (el) {
+        return el.events['x-network'][0];
+      }
+    );
+
+  d.Unknown = d.Unknown || [];
+  d.Unknown = d.Unknown.concat(d.undefined);
+  delete d.undefined;
+
+  return this.getStackedBarData(d, 'x-sms-comment');
+};
 Collection.prototype.gettransfers = function gettransfers() {
   var data =
   _.groupBy(
@@ -831,10 +941,9 @@ Collection.prototype.getcallsstate = function getcallsstate() {
     );
 
   var d = {};
-
   _.each(NIEGRIA_STATES, function (el, i) {
     d[el] = {};
-    d[el].users = data[el] ? data[el].length : 0;
+    d[el].users = _.filter(data[el], function (inEl) { return inEl.events['x-registered'] === 1; });
     d[el].sms = _.filter(data[el], function (inEl) { return inEl.type === '3'; });
     d[el].calls = _.filter(data[el], function (inEl) { return inEl.type === '1'; });
   });
@@ -1012,7 +1121,7 @@ Graph.prototype.drawGraph = function () {
 
         var usersLabel = document.createElement('span');
         usersLabel.className = 'users';
-        usersLabel.appendChild(document.createTextNode(data[k].users));
+        usersLabel.appendChild(document.createTextNode(data[k].users.length));
 
         var stateLabel = document.createElement('span');
         stateLabel.className = 'state';
