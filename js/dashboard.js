@@ -174,7 +174,7 @@ var getCommentOnConfession = function getCommentOnConfession(d) {
 var API = {
   getData: function (opt, cb) {
     var options = {};
-    options.url = 'https://shuga.sbc4d.com/en/generate_log_json.php';
+    options.url = 'http://demo.sbc4d.com/public/shugaivr/web/en/generate_log_json.php';
     options.data = opt;
 
     this.query(options, cb);
@@ -287,7 +287,6 @@ Collection.prototype.getAvgSessionStackedBarData = function (d) {
             val += d[i][key][k].endtime - d[i][key][k].starttime;
           }
           val /= significantData ? significantData : 1;
-          console.log(val);
         }
         biggests[key] = biggests[key] ? biggests[key] + val : val;
         dsdata.push(val);
@@ -735,7 +734,6 @@ Collection.prototype.getsmsage = function getage() {
     });
 
   var data = this.getDoughnutData(d);
-  console.log(data);
   for (var i = 0; i < data.length; i += 1) {
     if (data[i].label !== 'Unknown') {
       data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label;
@@ -848,6 +846,7 @@ Collection.prototype.getsmsoptoutpernetwork = function getsmsoptoutpernetwork() 
         return typeof el.events['x-network'] === 'object' ? el.events['x-network'][0] : el.events['x-network'];
       }
     );
+
   return this.getStackedBarData(d);
 };
 Collection.prototype.getsmscomments = function getsmscomments() {
@@ -893,7 +892,7 @@ Collection.prototype.getsmscommentsnetwork = function getsmscommentsnetwork() {
           return el.type === '3';
         }),
       function (el) {
-        return el.events['x-network'][0];
+        return typeof el.events['x-network'] === 'object' ? el.events['x-network'][0] : el.events['x-network'];
       }
     );
 
@@ -1097,6 +1096,15 @@ Graph.prototype.drawGraph = function () {
   }
 
   if (this.id !== 'getcallsstate') {
+
+    if (this.type === 'StackedBar' && !data.datasets.length) {
+      data.datasets.push({
+        fillColor: '#000',
+        data: [],
+        value: 'No data'
+      });
+    }
+
     this.chart[graph].call(this.chart, data, options);
     if ((typeof GRAPHS[this.id].legend !== 'undefined' && GRAPHS[this.id].legend) ||
         typeof GRAPHS[this.id].legend === 'undefined') {
