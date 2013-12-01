@@ -18,7 +18,7 @@ var GRAPHS = {
   'getactions': {               title: 'Actions per User',                          type: 'StackedBar'},
   'getbanned': {                title: 'Banned Users',                              type: 'StackedBar'},
   'geterror': {                 title: 'Errors',                                    type: 'StackedBar'},
-  'getsmsovertimeusage': {      title: 'SMS (Usage)',                               type: 'StackedBar'},
+  'getsmsovertimeusage': {      title: 'SMS (Activity)',                            type: 'StackedBar'},
   'getsmsovertimenetwork': {    title: 'SMS (Network)',                             type: 'StackedBar'},
   'getsmssubpernetwork': {      title: 'SMS Subscriptions per Network',             type: 'StackedBar'},
   'getsmsoptoutpernetwork': {   title: 'SMS Opt Outs per Network',                  type: 'StackedBar'},
@@ -28,6 +28,7 @@ var GRAPHS = {
   'getsmsgender': {             title: 'SMS Gender',                                type: 'Doughnut'},
   'getsmsage': {                title: 'SMS Age',                                   type: 'Doughnut'}
 };
+
 var LABELS = {
   'gettransfers': {
     '1': 'Transferred to NACA',
@@ -46,9 +47,14 @@ var LABELS = {
     '0': 'Unknown'
   },
   'getsmsovertimeusage': {
-    'x-sms-comment': 'Comments',
-    'x-sms-subscribe': 'Subscription',
-    'x-sms-register': 'Registration'
+    'x-sms-comment-air': 'Comments (Air)',
+    'x-sms-comment-mtn': 'Comments (MTN)',
+    'x-sms-subscribe-air': 'Subscription (Air)',
+    'x-sms-subscribe-mtn': 'Subscription (MTN)',
+    'x-sms-register-air': 'Registration (Air)',
+    'x-sms-register-mtn': 'Registration (MTN)',
+    'x-sms-optout-air': 'Opt Out (Air)',
+    'x-sms-optout-mtn': 'Opt Out (MTN)'
   },
   'getmsgdmvscmt': {
     'x-messages-left': 'Messages',
@@ -536,7 +542,7 @@ Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
   return data;
 };
 // can be greatly optimized
-Collection.prototype.getPonderedStackedBarData = function (d) {
+Collection.prototype.getPonderedStackedBarData = function (d, opts) {
   var data = { labels: [], datasets: [] };
   var self = this;
 
@@ -548,12 +554,20 @@ Collection.prototype.getPonderedStackedBarData = function (d) {
   data.labels = this.getLabels(lp, up);
 
   _.each(d, function (el, key) {
-    d[key] = _.groupBy(el, function (el2) {
+    var grp = _.groupBy(el.data, function (el2) {
       var ds = new Date(el2.starttime * 1000);
       var pre = ds.getPrecision(self.precision, ds.getFullYear());
       return pre.p + '-' + pre.y;
     });
+
+    d[key] = {
+      data: grp,
+      key: d[key].key,
+      single: d[key].single || false
+    };
   });
+
+  console.log(d);
 
   var dsnumber = 0;
   var biggests = {};
@@ -567,12 +581,16 @@ Collection.prototype.getPonderedStackedBarData = function (d) {
         var key = ldp.p + '-' + ld.getFullYear();
 
         var val = 0;
-        if (d[i][key]) {
-          for (var k = 0 ; k < d[i][key].length ; k += 1) {
-            if (typeof d[i][key][k][i] !== 'undefined') {
-              val += parseInt(d[i][key][k][i], 10) || 0;
-            } else if (typeof d[i][key][k].events[i] !== 'undefined') {
-              val += parseInt(d[i][key][k].events[i], 10) || 0;
+        if (d[i].data[key]) {
+          for (var k = 0 ; k < d[i].data[key].length ; k += 1) {
+              console.log(d[i].data[key][k][d[i].key], d[i].key);
+            if (typeof d[i].data[key][k][d[i].key] !== 'undefined') {
+
+              val += (d[i].single) ? 1 : (parseInt(d[i].data[key][k][d[i].key], 10) || 0);
+
+            } else if (typeof d[i].data[key][k].events[d[i].key] !== 'undefined') {
+              val += (d[i].single) ? 1 : (parseInt(d[i].data[key][k].events[d[i].key], 10) || 0);
+
             }
           }
         }
@@ -800,24 +818,71 @@ Collection.prototype.getmsgdmvscmt = function getmsgdmvscmt() {
   });
 };
 Collection.prototype.getsmsovertimeusage = function getsmsovertimeusage() {
+
+  var keys = {};
+
+
+
   return this.getPonderedStackedBarData({
-    'x-sms-comment': this.entries,
-    'x-sms-subscribe': this.entries,
-    'x-sms-register': this.entries
+    'x-sms-comment-mtn': {
+      key: 'x-sms-comment',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; })
+    },
+    'x-sms-comment-air': {
+      key: 'x-sms-comment',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
+    },
+    'x-sms-subscribe-mtn': {
+      key: 'x-sms-subscribe',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; })
+    },
+    'x-sms-subscribe-air': {
+      key: 'x-sms-subscribe',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
+    },
+    'x-sms-register-mtn': {
+      key: 'x-sms-register',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; })
+    },
+    'x-sms-register-air': {
+      key: 'x-sms-register',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
+    },
+    'x-sms-optout-mtn': {
+      key: 'x-sms-optout',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; }),
+      single: true
+    },
+    'x-sms-optout-air': {
+      key: 'x-sms-optout',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; }),
+      single: true
+    }
   });
 };
 Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
-  var d =
-    _.groupBy(
-      _.filter(
-        this.entries,
-        function (el) {
-          return el.type === '3';
-        }),
+  var d = {};
+  _.each(
+    _.filter(
+      this.entries,
       function (el) {
-        return typeof el.events['x-network'] === 'object' ? el.events['x-network'][0] : el.events['x-network'];
+        return el.type === '3';
+      }),
+    function (el) {
+      console.log(el);
+      if ( typeof el.events['x-network'] === 'object') {
+        for (var k = 0 ; k < el.events['x-network'].length ; k += 1) {
+          if (typeof d[el.events['x-network'][k]] === 'undefined') { d[el.events['x-network'][k]] = [];}
+          console.log(el, el.events['x-network'][k]);
+          d[el.events['x-network'][k]].push(el);
+        }
+      } else {
+        if (typeof d[el.events['x-network']] === 'undefined') { d[el.events['x-network']] = [];}
+        d[el.events['x-network']].push(el);
       }
-    );
+    }
+  );
+  console.log(d);
   return this.getStackedBarData(d);
 };
 Collection.prototype.getsmssubpernetwork = function getsmssubpernetwork() {
