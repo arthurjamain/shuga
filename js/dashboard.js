@@ -9,8 +9,10 @@ var GRAPHS = {
   'getmsgdmpercharacter': {     title: 'Messages (Direct Message per Character)',   type: 'StackedBar'},
   'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar'},
   'getcallsstate': {            title: 'Geolocated Calls',                          type: 'StackedBar'},
-  'getgender': {                title: 'Gender',                                    type: 'Doughnut'},
-  'getage': {                   title: 'Age Distribution',                          type: 'Doughnut'},
+  //'getgender': {                title: 'Gender',                                    type: 'Doughnut'},
+  //'getage': {                   title: 'Age Distribution',                          type: 'Doughnut'},
+  'getsmsgender': {             title: 'Gender',                                    type: 'Doughnut'},
+  'getsmsage': {                title: 'Age Distribution',                          type: 'Doughnut'},
   'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar'},
   'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar'},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'StackedBar'},
@@ -22,11 +24,9 @@ var GRAPHS = {
   'getsmsovertimenetwork': {    title: 'SMS (Network)',                             type: 'StackedBar'},
   'getsmssubpernetwork': {      title: 'SMS Subscriptions per Network',             type: 'StackedBar'},
   'getsmsoptoutpernetwork': {   title: 'SMS Opt Outs per Network',                  type: 'StackedBar'},
-  'getsmscomments': {           title: 'SMS Comments left per Character',           type: 'StackedBar'},
-  'getallcomments': {           title: 'All Comments left per Character',           type: 'StackedBar'},
-  'getsmscommentsnetwork': {    title: 'SMS Comments left per Network',             type: 'StackedBar'},
-  'getsmsgender': {             title: 'SMS Gender',                                type: 'Doughnut'},
-  'getsmsage': {                title: 'SMS Age',                                   type: 'Doughnut'}
+  'getsmscommentscharnet': {    title: 'SMS Comments left per Character/Network',   type: 'StackedBar'},
+  'getallcomments': {           title: 'All Comments left per Character',           type: 'StackedBar'}
+  //'getsmscommentsnetwork': {    title: 'SMS Comments left per Network',             type: 'StackedBar'},
 };
 
 var LABELS = {
@@ -40,8 +40,10 @@ var LABELS = {
   },
   'getgender': {
     '0': 'Unknown',
-    '1': 'Male',
-    '2': 'Female'
+    '1 SMS': 'Male (SMS)',
+    '1 IVR': 'Male (IVR)',
+    '2 SMS': 'Female (SMS)',
+    '2 IVR': 'Female (IVR)'
   },
   'getage': {
     '0': 'Unknown'
@@ -60,6 +62,7 @@ var LABELS = {
     'x-messages-left': 'Messages',
     'x-comments-left': 'Comments'
   },
+  'getsmscommentscharnet': {},
   'getexitpoints': {
     'main-menu': 'Main Menu',
     'confession': 'Confession',
@@ -567,8 +570,6 @@ Collection.prototype.getPonderedStackedBarData = function (d, opts) {
     };
   });
 
-  console.log(d);
-
   var dsnumber = 0;
   var biggests = {};
   for (var i in d) {
@@ -583,14 +584,10 @@ Collection.prototype.getPonderedStackedBarData = function (d, opts) {
         var val = 0;
         if (d[i].data[key]) {
           for (var k = 0 ; k < d[i].data[key].length ; k += 1) {
-              console.log(d[i].data[key][k][d[i].key], d[i].key);
             if (typeof d[i].data[key][k][d[i].key] !== 'undefined') {
-
               val += (d[i].single) ? 1 : (parseInt(d[i].data[key][k][d[i].key], 10) || 0);
-
             } else if (typeof d[i].data[key][k].events[d[i].key] !== 'undefined') {
               val += (d[i].single) ? 1 : (parseInt(d[i].data[key][k].events[d[i].key], 10) || 0);
-
             }
           }
         }
@@ -722,22 +719,32 @@ Collection.prototype.getage = function getage() {
   return data;
 };
 Collection.prototype.getsmsgender = function getgender() {
+
   var d =
     _.groupBy(
       _.filter(this.entries, function (e) {
-        return e.type === '3';
+        return e.type === '3' && typeof e.events['x-user-gender'] !== 'undefined';
       }),
     function (el) {
-      return !!el.events['x-user-gender'] ? el.events['x-user-gender'] : 0;
+      return !!el.events['x-user-gender'] ? el.events['x-user-gender'] + ' SMS' : 0;
     });
 
-  return this.getDoughnutData(d);
+  var d2 =
+    _.groupBy(
+      _.filter(this.entries, function (e) {
+        return e.type === '1' && typeof e.events['x-user-gender'] !== 'undefined';
+      }),
+    function (el) {
+      return !!el.events['x-user-gender'] ? el.events['x-user-gender'] + ' IVR' : 0;
+    });
+
+  return this.getDoughnutData(_.extend(d, d2));
 };
 Collection.prototype.getsmsage = function getage() {
   var d =
     _.groupBy(
       _.filter(this.entries, function (e) {
-        return e.type === '3';
+        return e.type === '3' && typeof e.events['x-user-age'] !== 'undefined';
       }),
     function (el) {
       if (el.events['x-user-age']) {
@@ -754,10 +761,35 @@ Collection.prototype.getsmsage = function getage() {
   var data = this.getDoughnutData(d);
   for (var i = 0; i < data.length; i += 1) {
     if (data[i].label !== 'Unknown') {
-      data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label;
+      data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label + ' (SMS)';
     }
   }
-  return data;
+
+  var d2 =
+    _.groupBy(
+      _.filter(this.entries, function (e) {
+        return e.type === '1' && typeof e.events['x-user-age'] !== 'undefined';
+      }),
+    function (el) {
+      if (el.events['x-user-age']) {
+        var age = parseInt(el.events['x-user-age'], 10);
+        for (var k = 0; k < AGE_RANGES.length ; k += 1) {
+          if (age > AGE_RANGES[k].range[0] && age < AGE_RANGES[k].range[1]) {
+            return k;
+          }
+        }
+      }
+      return 0;
+    });
+
+  var data2 = this.getDoughnutData(d2);
+  for (var i = 0; i < data2.length; i += 1) {
+    if (data2[i].label !== 'Unknown') {
+      data2[i].label = AGE_RANGES[parseInt(data2[i].label, 10)].label + ' (IVR)';
+    }
+  }
+
+  return data.concat(data2);
 };
 Collection.prototype.getbanned = function getbanned() {
   var d =
@@ -813,8 +845,14 @@ Collection.prototype.getSimpleBarData = function (data) {
 // can be greatly optimized
 Collection.prototype.getmsgdmvscmt = function getmsgdmvscmt() {
   return this.getPonderedStackedBarData({
-    'x-messages-left': this.entries,
-    'x-comments-left': this.entries
+    'x-messages-left': {
+      key: 'x-messages-left',
+      data: this.entries
+    },
+    'x-comments-left': {
+      key: 'x-comments-left',
+      data: this.entries
+    }
   });
 };
 Collection.prototype.getsmsovertimeusage = function getsmsovertimeusage() {
@@ -869,11 +907,9 @@ Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
         return el.type === '3';
       }),
     function (el) {
-      console.log(el);
       if ( typeof el.events['x-network'] === 'object') {
         for (var k = 0 ; k < el.events['x-network'].length ; k += 1) {
           if (typeof d[el.events['x-network'][k]] === 'undefined') { d[el.events['x-network'][k]] = [];}
-          console.log(el, el.events['x-network'][k]);
           d[el.events['x-network'][k]].push(el);
         }
       } else {
@@ -882,7 +918,6 @@ Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
       }
     }
   );
-  console.log(d);
   return this.getStackedBarData(d);
 };
 Collection.prototype.getsmssubpernetwork = function getsmssubpernetwork() {
@@ -914,7 +949,7 @@ Collection.prototype.getsmsoptoutpernetwork = function getsmsoptoutpernetwork() 
 
   return this.getStackedBarData(d);
 };
-Collection.prototype.getsmscomments = function getsmscomments() {
+Collection.prototype.getsmscommentscharnet = function getsmscommentscharnet() {
   var d =
     _.groupBy(
       _.filter(
@@ -927,9 +962,25 @@ Collection.prototype.getsmscomments = function getsmscomments() {
       }
     );
 
-  d.Unknown = d.Unknown || [];
-  d.Unknown = d.Unknown.concat(d.undefined);
   delete d.undefined;
+
+  var params = {};
+
+  for (var k in d) {
+    params[k + '-mtn'] = {
+      data: _.filter(d[k], function (el) { console.log(el); return el.type === '3' && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo')}),
+      key: 'x-sms-comment'
+    };
+    LABELS.getsmscommentscharnet[k + '-mtn'] = k + ' (MTN)';
+    params[k + '-air'] = {
+      data: _.filter(d[k], function (el) { return el.type === '3' && el.events['x-network'] && el.events['x-network'].indexOf('Airtel/Etisalat')}),
+      key: 'x-sms-comment'
+    };
+    LABELS.getsmscommentscharnet[k + '-air'] = k + ' (AIR)';
+
+  }
+  console.log(params);
+  return this.getPonderedStackedBarData(params);
 
   return this.getStackedBarData(d, 'x-sms-comment');
 };
