@@ -23,9 +23,20 @@ body {
   height: 80px;
 }
 
+.manycomments .legend {
+  -webkit-column-count: 5;
+  -moz-column-count: 5;
+  column-count: 5;
+  height: 80px;
+}
+
 .legend li {
   list-style: none;
   height: 40px;
+}
+
+.manycomments .legend li {
+  height: 19px;
 }
 
 .legend p {
@@ -42,10 +53,19 @@ body {
   height: 100%;
 }
 
+.manycomments .legend p {
+  font-size: 10px;
+}
+
 .legend .color {
   width: 20px;
   height: 20px;
   display: inline-block;
+}
+
+.manycomments .legend .color {
+  width: 10px;
+  height: 10px;
 }
 
 #graphs {

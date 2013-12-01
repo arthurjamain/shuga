@@ -16,7 +16,7 @@ var GRAPHS = {
   'getsessionlength': {         title: 'Average Session Length',                    type: 'StackedBar'},
   'gettransfers': {             title: 'Transfers to NACA',                         type: 'StackedBar'},
   'getconfovertime': {          title: 'Confessions Listening',                     type: 'StackedBar'},
-  'getexitpoints': {            title: 'Exit Points',                               type: 'Bar', legend: false},
+  'getexitpoints': {            title: 'Exit Points',                               type: 'Bar', legend: false },
   'getactions': {               title: 'Actions per User',                          type: 'StackedBar'},
   'getbanned': {                title: 'Banned Users',                              type: 'StackedBar'},
   'geterror': {                 title: 'Errors',                                    type: 'StackedBar'},
@@ -24,8 +24,8 @@ var GRAPHS = {
   'getsmsovertimenetwork': {    title: 'SMS (Network)',                             type: 'StackedBar'},
   'getsmssubpernetwork': {      title: 'SMS Subscriptions per Network',             type: 'StackedBar'},
   'getsmsoptoutpernetwork': {   title: 'SMS Opt Outs per Network',                  type: 'StackedBar'},
-  'getsmscommentscharnet': {    title: 'SMS Comments left per Character/Network',   type: 'StackedBar'},
-  'getallcomments': {           title: 'All Comments left per Character',           type: 'StackedBar'}
+  'getsmscommentscharnet': {    title: 'SMS Comments left per Character/Network',   type: 'StackedBar', manycomments: true },
+  'getallcomments': {           title: 'All Comments left per Character',           type: 'StackedBar', manycomments: true }
   //'getsmscommentsnetwork': {    title: 'SMS Comments left per Network',             type: 'StackedBar'},
 };
 
@@ -122,7 +122,16 @@ var COLORS = [
   '#E0E4CC',
   '#F04448',
   '#7D8796',
-  '#9A61FF'
+  '#9A61FF',
+  '#FFAFC0',
+  '#D1ACFF',
+  '#92B2FF',
+  '#C4FFF9',
+  '#B9FFC1',
+  '#F7FFA9',
+  '#FFCE91',
+  '#FF8A91',
+  '#738377'
 ];
 var SESSION_ACTIONS = [
   'A',
@@ -197,7 +206,7 @@ var API = {
   },
   query: function (opt, cb) {
     $.ajax(_.extend(opt || { }, {
-      success   : function (data) { cb(null, data); },
+      success   : function (data) { cb(null, window.DATA); },
       error     : function (xhr, status, error) { cb(error, null); },
       dataType  : 'json'
     }));
@@ -741,6 +750,7 @@ Collection.prototype.getsmsgender = function getgender() {
   return this.getDoughnutData(_.extend(d, d2));
 };
 Collection.prototype.getsmsage = function getage() {
+  var ccounter = 0;
   var d =
     _.groupBy(
       _.filter(this.entries, function (e) {
@@ -761,6 +771,7 @@ Collection.prototype.getsmsage = function getage() {
   var data = this.getDoughnutData(d);
   for (var i = 0; i < data.length; i += 1) {
     if (data[i].label !== 'Unknown') {
+      data[i].color = COLORS[ccounter++];
       data[i].label = AGE_RANGES[parseInt(data[i].label, 10)].label + ' (SMS)';
     }
   }
@@ -785,6 +796,7 @@ Collection.prototype.getsmsage = function getage() {
   var data2 = this.getDoughnutData(d2);
   for (var i = 0; i < data2.length; i += 1) {
     if (data2[i].label !== 'Unknown') {
+      data2[i].color = COLORS[ccounter++];
       data2[i].label = AGE_RANGES[parseInt(data2[i].label, 10)].label + ' (IVR)';
     }
   }
@@ -977,27 +989,46 @@ Collection.prototype.getsmscommentscharnet = function getsmscommentscharnet() {
       key: 'x-sms-comment'
     };
     LABELS.getsmscommentscharnet[k + '-air'] = k + ' (AIR)';
-
   }
-  console.log(params);
-  return this.getPonderedStackedBarData(params);
 
-  return this.getStackedBarData(d, 'x-sms-comment');
+  return this.getPonderedStackedBarData(params);
 };
 Collection.prototype.getallcomments = function getallcomments() {
   var d =
     _.groupBy(
-      this.entries,
+      _.filter(this.entries, function (el) { return el.type === '3' }),
       function (el) {
         return el.events['x-character-name'];
       }
     );
-
-  d.Unknown = d.Unknown || [];
-  d.Unknown = d.Unknown.concat(d.undefined);
   delete d.undefined;
 
-  return this.getStackedBarDataAllComments(d);
+  var d2 =
+    _.groupBy(
+      _.filter(this.entries, function (el) { return el.type === '1' }),
+      function (el) {
+        return el.events['x-character-name'];
+      }
+    );
+  delete d2.undefined;
+
+
+  var params = {};
+
+  for (var k in d) {
+    params[k + ' (SMS)'] = {
+      key: 'x-sms-comment',
+      data: d[k]
+    };
+  }
+  for (var k in d2) {
+    params[k + ' (IVR)'] = {
+      key: 'x-comments-left',
+      data: d2[k]
+    };
+  }
+
+  return this.getPonderedStackedBarData(params);
 };
 Collection.prototype.getsmscommentsnetwork = function getsmscommentsnetwork() {
   var d =
@@ -1142,6 +1173,7 @@ var Graph = function (params) {
   this.data = params.collection;
   this.type = params.type;
   this.title = params.title;
+  this.manycomments = params.manycomments;
 
   var existing = document.getElementById(params.id);
   if (existing) { existing.parentNode.removeChild(existing); }
@@ -1174,6 +1206,10 @@ Graph.prototype.render = function () {
   this.el.id = this.id;
   this.el.className = 'graph';
   this.setTitle(this.title);
+
+  if (this.manycomments) {
+    this.el.className += ' manycomments';
+  }
 
   if (this.id !== 'getcallsstate') {
     this.canvas = document.createElement('canvas');
@@ -1274,7 +1310,7 @@ var Picker = function () {
   this.$ = function (sel) { return $(sel, this.el); };
   var now = new Date();
   this.toDatePicker = this.$('.to').datepicker('setValue', now);
-  this.fromDatePicker = this.$('.from').datepicker('setValue', now.setDate(now.getDate() - 14));
+  this.fromDatePicker = this.$('.from').datepicker('setValue', new Date('11/28/2013'));
 };
 Picker.prototype.getForm = function () {
   var to = new Date(this.$('.to').val());
