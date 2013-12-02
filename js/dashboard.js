@@ -5,6 +5,7 @@ var GRAPHS = {
   'getcallsclient': {           title: 'Calls (Method of communication)',           type: 'StackedBar'},
   'getcallscharacters': {       title: 'Calls (Characters)',                        type: 'StackedBar'},
   'getcallsusers': {            title: 'Calls (Registered Users)',                  type: 'StackedBar'},
+  'getcallsunique': {           title: 'Calls (Unique Users)',                      type: 'StackedBar'},
   'getmsgdmvscmt': {            title: 'Messages (Direct Message vs Comment)',      type: 'StackedBar'},
   'getmsgdmpercharacter': {     title: 'Messages (Direct Message per Character)',   type: 'StackedBar'},
   'getmsgcmtperconf': {         title: 'Messages (Comments per Confessions)',       type: 'StackedBar'},
@@ -494,6 +495,69 @@ Collection.prototype.getStackedBarDataCpc = function (d) {
 
   return data;
 };
+Collection.prototype.getStackedBarDataUnique = function (d) {
+  var data = { labels: [], datasets: [] };
+  var self = this;
+  var lp = this.from.getPrecision(this.precision, this.from.getFullYear());
+  var up = this.to.getPrecision(this.precision, this.to.getFullYear());
+
+  var step = this.precision === 'week' ? 7 : 1;
+
+  data.labels = this.getLabels(lp, up);
+
+  _.each(d, function (el, key) {
+    d[key] = _.groupBy(el, function (el2) {
+      var ds = new Date(el2.starttime * 1000);
+      var pre = ds.getPrecision(self.precision, ds.getFullYear());
+      return pre.p + '-' + pre.y;
+    });
+  });
+
+  var dsnumber = 0;
+  var biggests = {};
+
+  for (var i in d) {
+    if (d.hasOwnProperty(i)) {
+      var ld = new Date(this.from);
+      var dsdata = [];
+      var maxpre = this.to.getPrecision(this.precision).p;
+
+      while (ld.getPrecision(this.precision).p <= maxpre) {
+        var ldp = ld.getPrecision(this.precision);
+        var key = ldp.p + '-' + ld.getFullYear();
+        var val = 0;
+        var used = {};
+        if (d[i][key] && d[i][key].length) {
+          console.log(d[i][key]);
+          for (var k = 0 ; k < d[i][key].length ; k += 1) {
+            var user = d[i][key][k].events['x-user'];
+            if (!!!user) { continue; }
+            if (used[user]) {
+              continue;
+            } else {
+              val += 1;
+              used[user] = true;
+            }
+          }
+        }
+
+        biggests[key] = biggests[key] ? biggests[key] + val : val;
+        dsdata.push(val);
+        ld.setDate(ld.getDate() + step);
+      }
+      data.datasets.push({
+        fillColor: COLORS[dsnumber],
+        data: dsdata,
+        value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
+      });
+      dsnumber += 1;
+    }
+  }
+  var biggest = _.max(biggests, function (e) { return e; });
+  _.extend(data, this.getScaleData(biggest));
+
+  return data;
+};
 Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
   var data = { labels: [], datasets: [] };
   var self = this;
@@ -668,6 +732,23 @@ Collection.prototype.getcallsusers = function getcallsusers() {
         return el.events['x-registered'];
       });
   var data = this.getStackedBarData(d);
+  return data;
+};
+Collection.prototype.getcallsunique = function getcallsunique() {
+  var d =
+    _.groupBy(
+      _.filter(
+        this.entries,
+        function (el) {
+          return el.type === '1' && el.events && el.events['x-dnid'] && el.events['x-dnid'] === 'skype';
+        }
+      ),
+      function (el) {
+        return el.events['x-user'] ? 'Unique Users' : '';
+      }
+    );
+  console.log(d);
+  var data = this.getStackedBarDataUnique(d);
   return data;
 };
 Collection.prototype.geterror = function () {
