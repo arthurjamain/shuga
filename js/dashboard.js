@@ -114,6 +114,26 @@ var NIEGRIA_STATES = [
   'Zamfara',
   'Unknown'
 ];
+var ORDERED_COLORS = [
+  '#FFB553',
+  '#F38630',
+  '#7D8796',
+  '#606978',
+  '#3EBFBE',
+  '#2D8B8B',
+  '#E0E4CC',
+  '#CFD5BA',
+  '#9A61FF',
+  '#FFAFC0',
+  '#D1ACFF',
+  '#92B2FF',
+  '#C4FFF9',
+  '#B9FFC1',
+  '#F7FFA9',
+  '#FFCE91',
+  '#FF8A91',
+  '#738377'
+]
 var COLORS = [
   '#FFB553',
   '#3EBFBE',
@@ -644,6 +664,7 @@ Collection.prototype.getPonderedStackedBarData = function (d, opts) {
   });
 
   var dsnumber = 0;
+  var colortype = [];
   var biggests = {};
   for (var i in d) {
     if (d.hasOwnProperty(i)) {
@@ -669,7 +690,7 @@ Collection.prototype.getPonderedStackedBarData = function (d, opts) {
         ld.setDate(ld.getDate() + step);
       }
       data.datasets.push({
-        fillColor: COLORS[dsnumber],
+        fillColor: opts && opts.orderedColors ? ORDERED_COLORS[dsnumber] : COLORS[dsnumber],
         data: dsdata,
         value: LABELS[arguments.callee.caller.name] ? LABELS[arguments.callee.caller.name][i] : i
       });
@@ -881,6 +902,8 @@ Collection.prototype.getsmsage = function getage() {
     if (data2[i].label !== 'Unknown') {
       data2[i].color = COLORS[ccounter++];
       data2[i].label = AGE_RANGES[parseInt(data2[i].label, 10)].label + ' (IVR)';
+    } else {
+      ccounter++;
     }
   }
 
@@ -957,40 +980,42 @@ Collection.prototype.getsmsovertimeusage = function getsmsovertimeusage() {
 
 
   return this.getPonderedStackedBarData({
-    'x-sms-comment-mtn': {
-      key: 'x-sms-comment',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; })
-    },
-    'x-sms-comment-air': {
-      key: 'x-sms-comment',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
-    },
     'x-sms-subscribe-mtn': {
       key: 'x-sms-subscribe',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; })
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo') > -1; })
     },
     'x-sms-subscribe-air': {
       key: 'x-sms-subscribe',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
     },
     'x-sms-register-mtn': {
       key: 'x-sms-register',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; })
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo') > -1; })
     },
     'x-sms-register-air': {
       key: 'x-sms-register',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
     },
     'x-sms-optout-mtn': {
       key: 'x-sms-optout',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('MTN/Glo') > -1; }),
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo') > -1; }),
       single: true
     },
     'x-sms-optout-air': {
       key: 'x-sms-optout',
-      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; }),
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; }),
       single: true
+    },
+    'x-sms-comment-mtn': {
+      key: 'x-sms-comment',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo') > -1; })
+    },
+    'x-sms-comment-air': {
+      key: 'x-sms-comment',
+      data: _.filter(this.entries, function (el) { return el.events && el.events['x-network'] && el.events['x-network'].indexOf('Airtel/Etisalat') > -1; })
     }
+  }, {
+    orderedColors: true
   });
 };
 Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
@@ -1074,7 +1099,9 @@ Collection.prototype.getsmscommentscharnet = function getsmscommentscharnet() {
     LABELS.getsmscommentscharnet[k + '-air'] = k + ' (AIR)';
   }
 
-  return this.getPonderedStackedBarData(params);
+  return this.getPonderedStackedBarData(params, {
+    orderedColors: true
+  });
 };
 Collection.prototype.getallcomments = function getallcomments() {
   var d =
@@ -1103,15 +1130,32 @@ Collection.prototype.getallcomments = function getallcomments() {
       key: 'x-sms-comment',
       data: d[k]
     };
-  }
-  for (var k in d2) {
-    params[k + ' (IVR)'] = {
-      key: 'x-comments-left',
-      data: d2[k]
-    };
+    if (d2[k]) {
+      params[k + ' (IVR)'] = {
+        key: 'x-comments-left',
+        data: d2[k]
+      };
+    }
   }
 
-  return this.getPonderedStackedBarData(params);
+  for (var k in d2) {
+    if (d[k] && !params[k + ' (SMS)']) {
+      params[k + ' (SMS)'] = {
+        key: 'x-sms-comment',
+        data: d[k]
+      };
+    }
+    if (!params[k + ' (IVR)']) {
+      params[k + ' (IVR)'] = {
+        key: 'x-comments-left',
+        data: d2[k]
+      };
+    }
+  }
+
+  return this.getPonderedStackedBarData(params, {
+    orderedColors: true
+  });
 };
 Collection.prototype.getsmscommentsnetwork = function getsmscommentsnetwork() {
   var d =
