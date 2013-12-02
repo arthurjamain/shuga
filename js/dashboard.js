@@ -206,7 +206,7 @@ var API = {
   },
   query: function (opt, cb) {
     $.ajax(_.extend(opt || { }, {
-      success   : function (data) { cb(null, window.DATA); },
+      success   : function (data) { cb(null, data); },
       error     : function (xhr, status, error) { cb(error, null); },
       dataType  : 'json'
     }));
@@ -916,7 +916,7 @@ Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
     _.filter(
       this.entries,
       function (el) {
-        return el.type === '3';
+        return el.type === '3' && el.events && el.events['x-sms-sent'];
       }),
     function (el) {
       if ( typeof el.events['x-network'] === 'object') {
@@ -930,7 +930,7 @@ Collection.prototype.getsmsovertimenetwork = function getsmsovertimenetwork() {
       }
     }
   );
-  return this.getStackedBarData(d);
+  return this.getStackedBarData(d, 'x-sms-sent');
 };
 Collection.prototype.getsmssubpernetwork = function getsmssubpernetwork() {
   var d =
@@ -980,7 +980,7 @@ Collection.prototype.getsmscommentscharnet = function getsmscommentscharnet() {
 
   for (var k in d) {
     params[k + '-mtn'] = {
-      data: _.filter(d[k], function (el) { console.log(el); return el.type === '3' && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo')}),
+      data: _.filter(d[k], function (el) { return el.type === '3' && el.events['x-network'] && el.events['x-network'].indexOf('MTN/Glo')}),
       key: 'x-sms-comment'
     };
     LABELS.getsmscommentscharnet[k + '-mtn'] = k + ' (MTN)';
