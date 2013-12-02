@@ -192,7 +192,7 @@ var getCommentOnConfession = function getCommentOnConfession(d) {
 var API = {
   getData: function (opt, cb) {
     var options = {};
-    options.url = 'http://demo.sbc4d.com/public/shugaivr/web/en/generate_log_json.php';
+    options.url = 'https://shuga.sbc4d.com/en/generate_log_json.php';
     options.data = opt;
 
     this.query(options, cb);
@@ -735,6 +735,7 @@ Collection.prototype.getsmsgender = function getgender() {
         return e.type === '3' && typeof e.events['x-user-gender'] !== 'undefined';
       }),
     function (el) {
+      if (typeof el.events['x-user-gender'] !== 'number' && !!el.events['x-user-gender']) { el.events['x-user-gender'] = parseInt(el.events['x-user-gender'], 10); }
       return !!el.events['x-user-gender'] ? el.events['x-user-gender'] + ' SMS' : 0;
     });
 
@@ -744,6 +745,7 @@ Collection.prototype.getsmsgender = function getgender() {
         return e.type === '1' && typeof e.events['x-user-gender'] !== 'undefined';
       }),
     function (el) {
+      if (typeof el.events['x-user-gender'] !== 'number' && !!el.events['x-user-gender']) { el.events['x-user-gender'] = parseInt(el.events['x-user-gender'], 10); }
       return !!el.events['x-user-gender'] ? el.events['x-user-gender'] + ' IVR' : 0;
     });
 
@@ -1089,7 +1091,14 @@ Collection.prototype.getcallsstate = function getcallsstate() {
   var d = {};
   _.each(NIEGRIA_STATES, function (el, i) {
     d[el] = {};
-    d[el].users = _.filter(data[el], function (inEl) { return inEl.events['x-registered'] === 1; });
+    d[el].users = _.filter(data[el], function (inEl) {
+
+      if (typeof inEl.events['x-registered'] === 'string') {
+        inEl.events['x-registered'] = parseInt(inEl.events['x-registered'], 10);
+      }
+
+      return inEl.events['x-registered'] === 1;
+    });
     d[el].sms = _.filter(data[el], function (inEl) { return inEl.type === '3'; });
     d[el].calls = _.filter(data[el], function (inEl) { return inEl.type === '1'; });
   });
