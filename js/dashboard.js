@@ -548,10 +548,9 @@ Collection.prototype.getStackedBarDataUnique = function (d) {
         var val = 0;
         var used = {};
         if (d[i][key] && d[i][key].length) {
-          console.log(d[i][key]);
           for (var k = 0 ; k < d[i][key].length ; k += 1) {
             var user = d[i][key][k].events['x-user'];
-            if (!!!user) { continue; }
+            if (!!!user) { val += 1; continue; }
             if (used[user]) {
               continue;
             } else {
@@ -761,14 +760,13 @@ Collection.prototype.getcallsunique = function getcallsunique() {
       _.filter(
         this.entries,
         function (el) {
-          return el.type === '1' && el.events && el.events['x-dnid'] && el.events['x-dnid'] === 'skype';
+          return el.type === '1' && el.events && el.events['x-dnid'];
         }
       ),
       function (el) {
         return el.events['x-user'] ? 'Unique Users' : '';
       }
     );
-  console.log(d);
   var data = this.getStackedBarDataUnique(d);
   return data;
 };
@@ -1216,14 +1214,38 @@ Collection.prototype.getcallsstate = function getcallsstate() {
   var d = {};
   _.each(NIEGRIA_STATES, function (el, i) {
     d[el] = {};
+    /* V1
     d[el].users = _.filter(data[el], function (inEl) {
 
       if (typeof inEl.events['x-registered'] === 'string') {
         inEl.events['x-registered'] = parseInt(inEl.events['x-registered'], 10);
       }
-
       return inEl.events['x-registered'] === 1;
     });
+    */
+    /* V2
+    d[el].users = _.filter(data[el], function (inEl) { return inEl.events && inEl.events['x-history'] && inEl.events['x-history'].indexOf('IM') > -1 });
+    */
+    d[el].users = [];
+    var countedUsers = {};
+    var doublons = {};
+    _.each(data[el], function (inEl) {
+      if (inEl.events && inEl.events['x-user']) {
+        if (!countedUsers[inEl.events['x-user']]) {
+          d[el].users.push(inEl);
+          countedUsers[inEl.events['x-user']] = true;
+        } else {
+          if (!doublons[inEl.events['x-user']]) {
+            doublons[inEl.events['x-user']] = 1
+          } else {
+            doublons[inEl.events['x-user']] += 1;
+          }
+        }
+      } else if (inEl.events && !inEl.events['x-user']) {
+        d[el].users.push(inEl);
+      }
+    });
+
     d[el].sms = _.filter(data[el], function (inEl) { return inEl.type === '3'; });
     d[el].calls = _.filter(data[el], function (inEl) { return inEl.type === '1'; });
   });
