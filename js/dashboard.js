@@ -618,6 +618,12 @@ Collection.prototype.getStackedBarData = function (d, ponderatingProp) {
               val += parseInt(d[i][key][g].events[ponderatingProp], 10) || 0;
             }
           }
+
+          if (ponderatingProp === 'x-naca') {
+            for (var o = 0 ; o < d[i][key].length ; o += 1) {
+              val += d[i][key][o].events['x-history'].split('L').length - 1;
+            }
+          }
         }
         biggests[key] = biggests[key] ? biggests[key] + val : val;
         dsdata.push(val);
@@ -1186,7 +1192,10 @@ Collection.prototype.gettransfers = function gettransfers() {
       return getNACA(el.events['x-history']);
     }
   );
-  return this.getStackedBarData(data);
+
+  delete data[0];
+
+  return this.getStackedBarData(data, 'x-naca');
 };
 Collection.prototype.getconfovertime = function getconfovertime() {
   var data =
